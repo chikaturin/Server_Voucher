@@ -4,13 +4,14 @@ const router = express.Router();
 const {
   register,
   signIn,
-  getAccountByPartner,
+  getAccountByService,
   getAccount,
 } = require("../Controller/AccountController.js");
+const CheckToken = require("../Middleware/checktoken.js");
 
 router.post("/register", register);
 router.post("/signIn", signIn);
-router.get("/getAccountByPartner", getAccountByPartner);
+router.get("/getAccountByPartner", CheckToken, getAccountByService);
 router.get("/getAccount", getAccount);
 
 module.exports = router;

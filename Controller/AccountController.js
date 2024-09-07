@@ -1,4 +1,4 @@
-const Account = require("../Schema/schema.js").AccountPartNer;
+const Account = require("../Schema/schema.js").AccountService;
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs"); // Thêm thư viện bcryptjs để mã hóa mật khẩu
@@ -8,15 +8,14 @@ dotenv.config();
 
 const register = async (req, res) => {
   try {
-    const { PartnerName, PassWord, Service } = req.body;
-    const _id = PartnerName;
+    const { ServiceName, PassWord, Service } = req.body;
+    const _id = ServiceName;
+    const Api_key = crypto.randomBytes(16).toString("hex");
 
     const existingAccount = await Account.findOne({ _id });
     if (existingAccount) {
       return res.status(400).json({ message: "ID already exists" });
     }
-
-    const apiKey = crypto.randomBytes(16).toString("hex");
 
     // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(PassWord, 10);
@@ -24,15 +23,15 @@ const register = async (req, res) => {
     // Tạo API Key ngẫu nhiên
     const account = new Account({
       _id,
-      PartnerName,
+      ServiceName,
       PassWord: hashedPassword,
       Service,
-      apiKey,
+      Api_key,
     });
 
     await account.save();
 
-    res.status(201).json({ message: "Account created successfully", apiKey });
+    res.status(201).json({ message: "Account created successfully", Api_key });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -40,50 +39,65 @@ const register = async (req, res) => {
 
 const signIn = async (req, res) => {
   try {
-    const { PartnerName, PassWord } = req.body;
-    const account = await Account.findOne({ PartnerName });
+    const { ServiceName, PassWord } = req.body;
+    const account = await Account.findOne({ ServiceName });
 
     if (!account) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Kiểm tra mật khẩu bằng bcrypt
+    // Check password with bcrypt
     const isMatch = await bcrypt.compare(PassWord, account.PassWord);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Tạo access token
-    const data = req.body;
-    const AccessTokken = jwt.sign({ data }, process.env.ACCESS_TOKEN_SECRET);
+    // Ensure account._id is defined before creating token
+    if (!account._id) {
+      return res.status(500).json({ message: "Account ID is missing" });
+    }
 
-    res.json({ AccessTokken });
+    // Create access token
+    const AccessTokken = jwt.sign(
+      {
+        account: account._id.toString(),
+        ServiceName: account.ServiceName,
+        Service: account.Service,
+        apiKey: account.Api_key,
+      },
+      process.env.ACCESS_TOKEN_SECRET
+    );
+
+    res.json({
+      AccessTokken,
+      message: "Access Token created successfully",
+      Name: ServiceName,
+      Pass: PassWord,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-const getAccountByPartner = async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+//dịch tokken tài khoản
+const getAccountByService = async (req, res) => {
+  try {
+    const Service_ID = req.decoded.account;
+    const Service = await Account.findById(Service_ID);
 
-  if (!token) return res.status(401).json({ message: "Token is required" });
-
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
-    if (err) return res.status(403).json({ message: "Invalid token" });
-
-    const Partner_ID = decoded.data._id; // lay id khach hang tu token
-    const Partner = await Account.findById({ _id: Partner_ID });
-
-    if (!Partner) return res.status(404).json({ message: "Partner not found" });
+    if (!Service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
 
     res.json({
-      PartnerId: Partner._id,
-      PartnerName: Partner.PartnerName,
-      Service: Partner.Service,
-      apiKey: Partner.apiKey,
+      _id: Service._id,
+      ServiceName: Service.ServiceName,
+      Service: Service.Service,
+      apiKey: Service.Api_key,
     });
-  });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const getAccount = async (req, res) => {
@@ -95,4 +109,4 @@ const getAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, signIn, getAccount, getAccountByPartner };
+module.exports = { register, signIn, getAccount, getAccountByService };

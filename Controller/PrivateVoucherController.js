@@ -13,10 +13,11 @@ const createPrivateVoucher = async (req, res) => {
       Image,
       Quantity,
       Conditions,
-      Service_ID,
+      Partner_ID,
     } = req.body;
 
-    const Partner_ID = req.decoded.data._id; // Lấy Partner_ID từ token đã giải mã
+    const Service_ID = req.decoded.account;
+    // Lấy Service_ID từ token đã giải mã
 
     const counterVoucher = await counterPrivateVoucher.findOneAndUpdate(
       { _id: "PrivateVoucher" },
@@ -36,8 +37,8 @@ const createPrivateVoucher = async (req, res) => {
       Image,
       Quantity,
       Conditions,
-      Partner_ID, // Partner_ID lấy từ token
-      Service_ID,
+      Service_ID, // Service_ID lấy từ token
+      Partner_ID,
     });
 
     await privateVoucher.save();
@@ -61,10 +62,11 @@ const updatePrivateVoucher = async (req, res) => {
       Conditions,
     } = req.body;
 
-    const Partner_ID = req.decoded.data._id; // Lấy Partner_ID từ token đã giải mã
+    const Service_ID = req.decoded.account;
+    // Lấy Service_ID từ token đã giải mã
 
     const privateVoucher = await PrivateVoucher.findOneAndUpdate(
-      { _id, Partner_ID },
+      { _id },
       {
         Name,
         PercentDiscount,
@@ -92,11 +94,11 @@ const deletePrivateVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
 
-    const Partner_ID = req.decoded.data._id; // Lấy Partner_ID từ token đã giải mã
+    const Service_ID = req.decoded.account;
+    // Lấy Service_ID từ token đã giải mã
 
     const privateVoucher = await PrivateVoucher.findOneAndDelete({
       _id,
-      Partner_ID,
     });
 
     if (!privateVoucher) {
@@ -112,11 +114,11 @@ const deletePrivateVoucher = async (req, res) => {
 const getPrivateVoucher = async (req, res) => {
   try {
     const apiKey = req.headers["x-api-key"];
-    const partner = await Partner.findOne({ apiKey });
-    const Service_ID = req.params.Service_ID;
+    const Service = await Partner.findOne({ apiKey });
+    const Partner_ID = req.params.Partner_ID;
 
     const privateVoucher = await PrivateVoucher.findOne(
-      { _id: partner._id } && { Service_ID }
+      { _id: Service._id } && { Partner_ID }
     );
 
     res.json(privateVoucher);
@@ -127,8 +129,9 @@ const getPrivateVoucher = async (req, res) => {
 
 const getPrivateVoucherByPartner = async (req, res) => {
   try {
-    const Partner_ID = req.decoded.data._id;
-    const privateVoucher = await PrivateVoucher.findOne({ Partner_ID });
+    const Service_ID = req.decoded.account;
+
+    const privateVoucher = await PrivateVoucher.findOne({ Service_ID });
     res.json(privateVoucher);
   } catch (error) {
     res.status(500).json({ message: error.message });

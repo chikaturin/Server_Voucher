@@ -1,6 +1,5 @@
 const express = require("express");
 const app = express();
-const jwt = require("jsonwebtoken");
 const data = require("./Data/data.js");
 
 app.use(express.json());
@@ -31,6 +30,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api", require("./Router/AccountRouter.js"));
+app.use("/api", require("./Router/GenaralVoucherRouter.js"));
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

@@ -8,7 +8,7 @@ const counterSchema = new mongoose.Schema({
 // This is the schema for the partner account model
 const AccountPartNerSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  PartnerName: { type: String, required: true },
+  ServiceName: { type: String, required: true },
   PassWord: { type: String, required: true },
   Service: { type: String, required: true },
   Api_key: { type: String, required: true },
@@ -25,7 +25,7 @@ const GeneralVoucherSchema = new mongoose.Schema({
   Image: { type: String },
   Quantity: { type: Number, required: true },
   Conditions: { type: Number, required: true },
-  Partner_ID: { type: String, required: true }, // This is the ID_Partner of the partner
+  Service_ID: { type: String, required: true }, // This is the service code of each partner
 });
 
 // Schema for private vouchers created for each service by the partner
@@ -39,8 +39,8 @@ const PrivateVoucherSchema = new mongoose.Schema({
   Image: { type: String },
   Quantity: { type: Number, required: true },
   Conditions: { type: Number, required: true },
-  Partner_ID: { type: String, required: true }, // This is the ID_Partner of the partner
-  Service_ID: { type: String, required: true }, // This is the service code of each partner
+  Partner_ID: { type: String, required: true }, // This is the ID_Partner of the partner=tên cửa hàng
+  Service_ID: { type: String, required: true }, // This is the service code of each partner=apikey
 });
 
 // Schema for customer vouchers when they accumulate points

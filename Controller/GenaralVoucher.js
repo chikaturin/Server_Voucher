@@ -1,6 +1,6 @@
 const GeneralVoucher = require("../Schema/schema").GeneralVoucher;
 const counterGenaralVoucher = require("../Schema/schema").counterGenaralVoucher;
-const Partner = require("../Schema/schema").AccountPartNer;
+const Account = require("../Schema/schema.js").AccountService;
 
 const createGeneralVoucher = async (req, res) => {
   try {
@@ -15,7 +15,21 @@ const createGeneralVoucher = async (req, res) => {
       Conditions,
     } = req.body;
 
-    const Partner_ID = req.decoded.data._id; // Lấy Partner_ID từ token đã giải mã
+    if (!Name || !PercentDiscount || !StartDate || !EndDate || !Quantity) {
+      return res
+        .status(400)
+        .json({ message: "All required fields must be provided" });
+    }
+
+    const startDate = new Date(StartDate);
+    const endDate = new Date(EndDate);
+    if (endDate <= startDate) {
+      return res
+        .status(400)
+        .json({ message: "EndDate must be after StartDate" });
+    }
+
+    const Service_ID = req.decoded.account;
 
     const counterVoucher = await counterGenaralVoucher.findOneAndUpdate(
       { _id: "GenaralVoucher" },
@@ -23,23 +37,28 @@ const createGeneralVoucher = async (req, res) => {
       { new: true, upsert: true }
     );
 
+    // Create unique voucher ID
     const _id = `GV${counterVoucher.seq}`;
 
     const generalVoucher = new GeneralVoucher({
       _id,
       Name,
       PercentDiscount,
-      StartDate,
-      EndDate,
+      StartDate: startDate,
+      EndDate: endDate,
       Description,
       Image,
       Quantity,
       Conditions,
-      Partner_ID, // Partner_ID lấy từ token
+      Service_ID,
     });
 
     await generalVoucher.save();
-    res.status(201).json({ message: "General Voucher created successfully" });
+
+    res.status(201).json({
+      message: "General Voucher created successfully",
+      voucher: generalVoucher,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -107,29 +126,31 @@ const getGeneralVoucherByAdmin = async (req, res) => {
   }
 };
 
-//get voucher by partner ở trên web service của mình
-const getvoucherManagerbyPartner = async (req, res) => {
+//get voucher by service ở trên web service của mình
+const getvoucherManagerbyService = async (req, res) => {
   try {
-    const Partner_ID = req.decoded.data._id;
-    const generalVoucher = await GeneralVoucher.findOne({ Partner_ID });
+    const Service_ID = req.decoded.account;
+    const generalVoucher = await GeneralVoucher.findOne({ Service_ID });
     res.json(generalVoucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-//get voucher by partner ở trên web service của họ nên cần API key
-const getVoucherByPartner = async (req, res) => {
+//get voucher by service ở trên web service của họ nên cần API key
+const getVoucherByService = async (req, res) => {
   try {
     const apiKey = req.headers["x-api-key"];
 
-    const partner = await Partner.findOne({ apiKey });
+    const service = await Account.findOne({ Api_key: apiKey });
 
-    if (!partner) {
+    if (!service) {
       return res.status(403).json({ message: "Invalid API key" });
     }
 
-    const generalVoucher = await GeneralVoucher.find({ _id: partner._id });
+    const generalVoucher = await GeneralVoucher.find({
+      Service_ID: service._id,
+    });
     res.json(generalVoucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -139,8 +160,8 @@ const getVoucherByPartner = async (req, res) => {
 module.exports = {
   createGeneralVoucher,
   getGeneralVoucherByAdmin,
-  getVoucherByPartner,
-  getvoucherManagerbyPartner,
+  getVoucherByService,
+  getvoucherManagerbyService,
   updateGeneralVoucher,
   deleteGeneralVoucher,
 };

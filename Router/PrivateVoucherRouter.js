@@ -8,7 +8,7 @@ const {
   getPrivateVoucher,
   getPrivateVoucherByAdmin,
   getPrivateVoucherByPartner,
-} = require("../Controller/PrivateVoucher.js");
+} = require("../Controller/PrivateVoucherController.js");
 
 const checktoken = require("../Middleware/checktoken.js");
 

@@ -3,8 +3,8 @@ const router = express.Router();
 const {
   createGeneralVoucher,
   getGeneralVoucherByAdmin,
-  getVoucherByPartner,
-  getvoucherManagerbyPartner,
+  getVoucherByService,
+  getvoucherManagerbyService,
   updateGeneralVoucher,
   deleteGeneralVoucher,
 } = require("../Controller/GenaralVoucher.js");
@@ -13,11 +13,13 @@ const checktoken = require("../Middleware/checktoken.js");
 
 router.post("/createGeneralVoucher", checktoken, createGeneralVoucher);
 router.get("/getGeneralVoucherByAdmin", getGeneralVoucherByAdmin);
-router.get("/getVoucherByPartner", getVoucherByPartner); //lấy từ api key
+router.get("/getVoucherByService", getVoucherByService); //lấy từ api key
 router.get(
-  "/getvoucherManagerbyPartner",
+  "/getvoucherManagerbyService",
   checktoken,
-  getvoucherManagerbyPartner
+  getvoucherManagerbyService
 );
 router.put("/updateGeneralVoucher/:_id", updateGeneralVoucher);
 router.delete("/deleteGeneralVoucher/:_id", deleteGeneralVoucher);
+
+module.exports = router;
