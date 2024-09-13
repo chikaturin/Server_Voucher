@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs"); // Thêm thư viện bcryptjs để mã hóa mật khẩu
 const crypto = require("crypto"); // Thêm thư viện crypto để tạo API Key ngẫu nhiên
-
 dotenv.config();
 
 const register = async (req, res) => {
@@ -11,11 +10,6 @@ const register = async (req, res) => {
     const { ServiceName, PassWord, Service } = req.body;
     const _id = ServiceName;
     const Api_key = crypto.randomBytes(16).toString("hex");
-
-    const existingAccount = await Account.findOne({ _id });
-    if (existingAccount) {
-      return res.status(400).json({ message: "ID already exists" });
-    }
 
     // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(PassWord, 10);

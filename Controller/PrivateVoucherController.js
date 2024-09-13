@@ -1,6 +1,6 @@
 const PrivateVoucher = require("../Schema/schema").PrivateVoucher;
 const counterPrivateVoucher = require("../Schema/schema").counterPrivateVoucher;
-const Partner = require("../Schema/schema").AccountPartNer;
+const Account = require("../Schema/schema").AccountService;
 
 const createPrivateVoucher = async (req, res) => {
   try {
@@ -13,10 +13,11 @@ const createPrivateVoucher = async (req, res) => {
       Image,
       Quantity,
       Conditions,
-      Partner_ID,
     } = req.body;
 
-    const Service_ID = req.decoded.account;
+    const Service_ID = req.service._id;
+    // Lấy Service_ID từ apiKey đã giải mã
+    const Partner_ID = req.decoded.account;
     // Lấy Service_ID từ token đã giải mã
 
     const counterVoucher = await counterPrivateVoucher.findOneAndUpdate(
@@ -37,7 +38,7 @@ const createPrivateVoucher = async (req, res) => {
       Image,
       Quantity,
       Conditions,
-      Service_ID, // Service_ID lấy từ token
+      Service_ID,
       Partner_ID,
     });
 
@@ -61,9 +62,6 @@ const updatePrivateVoucher = async (req, res) => {
       Quantity,
       Conditions,
     } = req.body;
-
-    const Service_ID = req.decoded.account;
-    // Lấy Service_ID từ token đã giải mã
 
     const privateVoucher = await PrivateVoucher.findOneAndUpdate(
       { _id },
@@ -94,9 +92,6 @@ const deletePrivateVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
 
-    const Service_ID = req.decoded.account;
-    // Lấy Service_ID từ token đã giải mã
-
     const privateVoucher = await PrivateVoucher.findOneAndDelete({
       _id,
     });
@@ -111,15 +106,11 @@ const deletePrivateVoucher = async (req, res) => {
   }
 };
 
-const getPrivateVoucher = async (req, res) => {
+const getPrivateVoucherByService = async (req, res) => {
   try {
-    const apiKey = req.headers["x-api-key"];
-    const Service = await Partner.findOne({ apiKey });
-    const Partner_ID = req.params.Partner_ID;
-
-    const privateVoucher = await PrivateVoucher.findOne(
-      { _id: Service._id } && { Partner_ID }
-    );
+    const privateVoucher = await PrivateVoucher.find({
+      Service_ID: req.service._id,
+    });
 
     res.json(privateVoucher);
   } catch (error) {
@@ -129,9 +120,14 @@ const getPrivateVoucher = async (req, res) => {
 
 const getPrivateVoucherByPartner = async (req, res) => {
   try {
-    const Service_ID = req.decoded.account;
+    const Service_ID = req.service._id;
+    // Lấy Service_ID từ apiKey đã giải mã
+    const Partner_ID = req.decoded.account;
+    // Lấy Service_ID từ token đã giải mã
 
-    const privateVoucher = await PrivateVoucher.findOne({ Service_ID });
+    const privateVoucher = await PrivateVoucher.find(
+      { Partner_ID: Partner_ID } && { Service_ID: Service_ID }
+    );
     res.json(privateVoucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -147,11 +143,25 @@ const getPrivateVoucherByAdmin = async (req, res) => {
   }
 };
 
+const ChoosevoucherPrivate = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const privateVoucher = await PrivateVoucher.findById(_id);
+    if (!privateVoucher) {
+      return res.status(404).json({ message: "Private Voucher not found" });
+    }
+    res.status(200).json(privateVoucher);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createPrivateVoucher,
   updatePrivateVoucher,
   deletePrivateVoucher,
-  getPrivateVoucher,
+  getPrivateVoucherByService,
   getPrivateVoucherByAdmin,
   getPrivateVoucherByPartner,
+  ChoosevoucherPrivate,
 };

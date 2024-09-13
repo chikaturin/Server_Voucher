@@ -130,7 +130,9 @@ const getGeneralVoucherByAdmin = async (req, res) => {
 const getvoucherManagerbyService = async (req, res) => {
   try {
     const Service_ID = req.decoded.account;
-    const generalVoucher = await GeneralVoucher.findOne({ Service_ID });
+    const generalVoucher = await GeneralVoucher.find({
+      Service_ID: Service_ID,
+    });
     res.json(generalVoucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -140,20 +142,25 @@ const getvoucherManagerbyService = async (req, res) => {
 //get voucher by service ở trên web service của họ nên cần API key
 const getVoucherByService = async (req, res) => {
   try {
-    const apiKey = req.headers["x-api-key"];
-
-    const service = await Account.findOne({ Api_key: apiKey });
-
-    if (!service) {
-      return res.status(403).json({ message: "Invalid API key" });
-    }
-
     const generalVoucher = await GeneralVoucher.find({
-      Service_ID: service._id,
+      Service_ID: req.service._id,
     });
     res.json(generalVoucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+const Choosevoucher = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const generalVoucher = await GeneralVoucher.findById(_id);
+    if (!generalVoucher) {
+      return res.status(404).json({ message: "General Voucher not found" });
+    }
+    res.status(200).json(generalVoucher);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -164,4 +171,5 @@ module.exports = {
   getvoucherManagerbyService,
   updateGeneralVoucher,
   deleteGeneralVoucher,
+  Choosevoucher,
 };

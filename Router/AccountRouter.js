@@ -7,11 +7,11 @@ const {
   getAccountByService,
   getAccount,
 } = require("../Controller/AccountController.js");
-const CheckToken = require("../Middleware/checktoken.js");
+const CheckToken = require("../Middleware/check.js").checktokken;
 
 router.post("/register", register);
 router.post("/signIn", signIn);
-router.get("/getAccountByPartner", CheckToken, getAccountByService);
+router.get("/getAccountByService", CheckToken, getAccountByService);
 router.get("/getAccount", getAccount);
 
 module.exports = router;

@@ -9,14 +9,15 @@ const {
   deleteGeneralVoucher,
 } = require("../Controller/GenaralVoucher.js");
 
-const checktoken = require("../Middleware/checktoken.js");
+const checktokken = require("../Middleware/check.js").checktokken;
+const checkAPIkey = require("../Middleware/check.js").checkAPIkey;
 
-router.post("/createGeneralVoucher", checktoken, createGeneralVoucher);
+router.post("/createGeneralVoucher", checktokken, createGeneralVoucher);
 router.get("/getGeneralVoucherByAdmin", getGeneralVoucherByAdmin);
-router.get("/getVoucherByService", getVoucherByService); //lấy từ api key
+router.get("/getVoucherByService", checkAPIkey, getVoucherByService); //lấy từ api key
 router.get(
   "/getvoucherManagerbyService",
-  checktoken,
+  checktokken,
   getvoucherManagerbyService
 );
 router.put("/updateGeneralVoucher/:_id", updateGeneralVoucher);
