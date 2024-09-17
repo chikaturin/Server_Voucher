@@ -6,105 +6,112 @@ const counterSchema = new mongoose.Schema({
 });
 
 // This is the schema for the partner account model
-const AccountServiceSchema = new mongoose.Schema({
+const AccountAdminSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  Name: { type: String, required: true },
+  PassWord: { type: String, required: true },
+});
+
+const ServiceSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   ServiceName: { type: String, required: true },
-  PassWord: { type: String, required: true },
-  Service: { type: String, required: true },
-  Api_key: { type: String, required: true },
+});
+
+const PartnerSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  Name: { type: String, required: true },
+  Service_ID: { type: String, required: true },
 });
 
 // Schema for general vouchers applicable across the entire website of a partner
-const GeneralVoucherSchema = new mongoose.Schema({
+const VoucherSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   Name: { type: String, required: true },
-  PercentDiscount: { type: Number, required: true },
-  StartDate: { type: Date, required: true },
-  EndDate: { type: Date },
+  ReleaseTime: { type: Date, required: true },
+  ExpiredTime: { type: Date },
   Description: { type: String },
   Image: { type: String },
-  Quantity: { type: Number, required: true },
-  Conditions: { type: Number, required: true },
-  Service_ID: { type: String, required: true }, // This is the service code of each partner
-});
-
-// Schema for private vouchers created for each service by the partner
-const PrivateVoucherSchema = new mongoose.Schema({
-  _id: { type: String, required: true },
-  Name: { type: String, required: true },
+  RemainQuantity: { type: Number, required: true },
+  MinValue: { type: Number, required: true },
+  MaxValue: { type: Number, required: true },
   PercentDiscount: { type: Number, required: true },
-  StartDate: { type: Date, required: true },
-  EndDate: { type: Date },
-  Description: { type: String },
-  Image: { type: String },
-  Quantity: { type: Number, required: true },
-  Conditions: { type: Number, required: true },
-  Partner_ID: { type: String, required: true }, // This is the ID_Partner of the partner=tên cửa hàng
-  Service_ID: { type: String, required: true }, // This is the service code of each partner=apikey
+  ServiceID: { type: String },
+  Partner_ID: { type: String },
+  Status: { type: String, required: true },
 });
 
 // Schema for customer vouchers when they accumulate points
-// const VoucherCusSchema = new mongoose.Schema({
-//   _id: { type: String, required: true },
-//   Name: { type: String, required: true },
-//   PercentDiscount: { type: Number, required: true },
-//   StartDate: { type: Date, required: true },
-//   EndDate: { type: Date },
-//   Description: { type: String },
-//   Quantity: { type: Number, required: true },
-//   Conditions: { type: Number, required: true },
-//   ID_Cus: { type: String, required: true }, // dựa vào token để lấy ID_Cus
-// });
+const VoucherCusSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  Cus_ID: { type: String, required: true }, // dựa vào token để lấy ID_Cus
+  Voucher_ID: { type: String, required: true },
+});
 
 // Schema for payment (ThanhToan) related data
-const ThanhToanSchema = new mongoose.Schema({
+const HistorySchema = new mongoose.Schema({
   _id: { type: String, required: true },
   Cus_ID: { type: String, required: true },
-  Service_ID: { type: String, required: true },
   Voucher_ID: { type: String, required: true },
-  priceBeforeDiscount: { type: Number, required: true },
-  PercentDiscount: { type: Number, required: true },
-  priceAfterDiscount: { type: Number, required: true },
+  Service_ID: { type: String, required: true },
+  TotalDiscount: { type: Number, required: true },
+  AmountUsed: { type: Number, required: true },
   Date: { type: Date, required: true },
 });
 
 const ReportVoucherSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  ErrorType: { type: String, required: true },
+  Content: { type: String, required: true },
+  DayReport: { type: Date, required: true },
   Voucher_ID: { type: String, required: true },
-  Description: { type: String, required: true },
-  Image: { type: String, required: true },
-  DateReport: { type: Date, required: true },
+  ReportedBy: { type: String, required: true },
+});
+
+const NoteVoucherSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  State: { type: String, required: true },
+  Voucher_ID: { type: String, required: true },
+  Price: { type: Number, required: true },
+  Product_ID: { type: String, required: true },
 });
 
 // Models
-const AccountService = mongoose.model("AccountPartNer", AccountServiceSchema);
-const GeneralVoucher = mongoose.model("GeneralVoucher", GeneralVoucherSchema);
-const counterGenaralVoucher = mongoose.model("GenaralVoucher", counterSchema);
-const counterPrivateVoucher = mongoose.model(
-  "CounterPrivateVoucher",
+const AccountAdmin = mongoose.model("AccountPartNer", AccountAdminSchema);
+const VoucherGenaral = mongoose.model("Voucher", VoucherSchema);
+const VoucherCus = mongoose.model("VoucherCus", VoucherCusSchema);
+const History = mongoose.model("History", HistorySchema);
+const ReportVoucher = mongoose.model("ReportVoucher", ReportVoucherSchema);
+const NoteVoucher = mongoose.model("NoteVoucher", NoteVoucherSchema);
+
+const counterVoucher = mongoose.model("CounterVoucher", counterSchema);
+const counterVoucherService = mongoose.model(
+  "CounterVoucherService",
   counterSchema
 );
-const counterThanhToan = mongoose.model("CounterThanhToan", counterSchema);
+const counterVoucherPartner = mongoose.model(
+  "CounterVoucherPartner",
+  counterSchema
+);
+const counterVoucherCus = mongoose.model("CounterVoucherCus", counterSchema);
+const counterHistory = mongoose.model("CounterHistory", counterSchema);
 const counterReportVoucher = mongoose.model(
   "CounterReportVoucher",
   counterSchema
 );
-const PrivateVoucher = mongoose.model("PrivateVoucher", PrivateVoucherSchema);
+
 // const VoucherCus = mongoose.model("VoucherCus", VoucherCusSchema);
-const ThanhToan = mongoose.model("ThanhToan", ThanhToanSchema);
-const ReportVoucher = mongoose.model("ReportVoucher", ReportVoucherSchema);
 
 module.exports = {
-  counterGenaralVoucher,
-  counterPrivateVoucher,
-  counterThanhToan,
+  counterVoucher,
+  counterHistory,
+  counterVoucherCus,
   counterReportVoucher,
+  counterVoucherPartner,
+  counterVoucherService,
 
-  AccountService,
-  GeneralVoucher,
-  PrivateVoucher,
-  // VoucherCus,
-  ThanhToan,
+  AccountAdmin,
   ReportVoucher,
+  VoucherGenaral,
+  VoucherCus,
+  History,
+  NoteVoucher,
 };

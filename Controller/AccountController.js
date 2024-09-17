@@ -1,4 +1,4 @@
-const Account = require("../Schema/schema.js").AccountService;
+const Account = require("../Schema/schema.js").AccountAdmin;
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs"); // Thêm thư viện bcryptjs để mã hóa mật khẩu
