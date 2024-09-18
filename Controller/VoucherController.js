@@ -7,7 +7,7 @@ const Account = require("../Schema/schema.js").AccountAdmin;
 const createVoucherbyAdmin = async (req, res) => {
   try {
     const {
-      VoucherName,
+      Name,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -19,7 +19,7 @@ const createVoucherbyAdmin = async (req, res) => {
     } = req.body;
 
     if (
-      !VoucherName ||
+      !Name ||
       !ReleaseTime ||
       !RemainQuantity ||
       !MinValue ||
@@ -36,6 +36,21 @@ const createVoucherbyAdmin = async (req, res) => {
         .status(400)
         .json({ message: "ExpiredTime must be after ReleaseTime" });
     }
+    if (PercentDiscount < 0 || PercentDiscount > 100) {
+      return res
+        .status(400)
+        .json({ message: "PercentDiscount must be between 0 and 100" });
+    }
+    if (MinValue < 0 || MaxValue < 0) {
+      return res
+        .status(400)
+        .json({ message: "MinValue and MaxValue must be greater than 0" });
+    }
+    if (ReleaseTime < new Date()) {
+      return res
+        .status(400)
+        .json({ message: "ReleaseTime must be after current time" });
+    }
 
     const counterVoucher = await CounterVoucher.findOneAndUpdate(
       { _id: "GenaralVoucher" },
@@ -49,7 +64,7 @@ const createVoucherbyAdmin = async (req, res) => {
 
     const voucher = new Voucher({
       _id,
-      VoucherName,
+      Name,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -76,7 +91,7 @@ const createVoucherbyAdmin = async (req, res) => {
 const createVoucherbyService = async (req, res) => {
   try {
     const {
-      VoucherName,
+      Name,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -88,7 +103,7 @@ const createVoucherbyService = async (req, res) => {
     } = req.body;
 
     if (
-      !VoucherName ||
+      !Name ||
       !ReleaseTime ||
       !RemainQuantity ||
       !MinValue ||
@@ -119,7 +134,7 @@ const createVoucherbyService = async (req, res) => {
 
     const voucher = new Voucher({
       _id,
-      VoucherName,
+      Name,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -134,9 +149,8 @@ const createVoucherbyService = async (req, res) => {
 
     await voucher.save();
 
-    res.status(201).json({
+    res.status(200).json({
       message: " Voucher created successfully",
-      voucher: voucher,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -147,7 +161,7 @@ const createVoucherbyService = async (req, res) => {
 const createVoucherbyPartner = async (req, res) => {
   try {
     const {
-      VoucherName,
+      Name,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -159,7 +173,7 @@ const createVoucherbyPartner = async (req, res) => {
     } = req.body;
 
     if (
-      !VoucherName ||
+      !Name ||
       !ReleaseTime ||
       !RemainQuantity ||
       !MinValue ||
@@ -195,7 +209,7 @@ const createVoucherbyPartner = async (req, res) => {
 
     const voucher = new Voucher({
       _id,
-      VoucherName,
+      Name,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -219,11 +233,23 @@ const createVoucherbyPartner = async (req, res) => {
   }
 };
 
+const DetailVoucher = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const voucher = await Voucher.findById(_id);
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher not found" });
+    }
+    res.json(voucher);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const updateVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
     const {
-      VoucherName,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -236,11 +262,30 @@ const updateVoucher = async (req, res) => {
 
     const voucher = await Voucher.findById(_id);
 
+    if (ReleaseTime >= ExpiredTime) {
+      return res
+        .status(400)
+        .json({ message: "ExpiredTime must be after ReleaseTime" });
+    }
+    if (PercentDiscount < 0 || PercentDiscount > 100) {
+      return res
+        .status(400)
+        .json({ message: "PercentDiscount must be between 0 and 100" });
+    }
+    if (MinValue < 0 || MaxValue < 0) {
+      return res
+        .status(400)
+        .json({ message: "MinValue and MaxValue must be greater than 0" });
+    }
+    if (ReleaseTime < new Date()) {
+      return res
+        .status(400)
+        .json({ message: "ReleaseTime must be after current time" });
+    }
     if (!voucher) {
       return res.status(404).json({ message: "Voucher not found" });
     }
 
-    voucher.VoucherName = VoucherName;
     voucher.ReleaseTime = ReleaseTime;
     voucher.ExpiredTime = ExpiredTime;
     voucher.Description = Description;
@@ -249,12 +294,6 @@ const updateVoucher = async (req, res) => {
     voucher.MinValue = MinValue;
     voucher.MaxValue = MaxValue;
     voucher.PercentDiscount = PercentDiscount;
-
-    voucher.Status = "disable";
-
-    await voucher.save();
-
-    voucher.Status = "enable";
 
     await voucher.save();
 
@@ -270,13 +309,11 @@ const updateVoucher = async (req, res) => {
 const deleteVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const voucher = await Voucher.findById(_id);
+    const voucher = await Voucher.findByIdAndDelete(_id);
 
     if (!voucher) {
       return res.status(404).json({ message: " Voucher not found" });
     }
-
-    await voucher.remove();
     res.json({ message: " Voucher deleted successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -341,6 +378,27 @@ const getVoucherByService = async (req, res) => {
   }
 };
 
+const updateState = async (req, res) => {
+  try {
+    const { _id } = req.params;
+
+    const voucher = await Voucher.findById(_id);
+    if (!voucher) {
+      return res
+        .status(404)
+        .json({ message: "Voucher not found to update state" });
+    }
+
+    voucher.Status = voucher.Status === "enable" ? "disable" : "enable";
+
+    await voucher.save();
+
+    res.status(200).json({ message: "State updated successfully" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createVoucherbyAdmin,
   createVoucherbyService,
@@ -351,4 +409,6 @@ module.exports = {
   getvoucherManagerbyService,
   getvoucherManagerbyPartner,
   getVoucherByService,
+  DetailVoucher,
+  updateState,
 };
