@@ -18,14 +18,7 @@ const createVoucherbyAdmin = async (req, res) => {
       PercentDiscount,
     } = req.body;
 
-    if (
-      !Name ||
-      !ReleaseTime ||
-      !RemainQuantity ||
-      !MinValue ||
-      !MaxValue ||
-      !PercentDiscount
-    ) {
+    if (!Name || !ReleaseTime || !RemainQuantity || !PercentDiscount) {
       return res
         .status(400)
         .json({ message: "All required fields must be provided" });
@@ -388,8 +381,11 @@ const updateState = async (req, res) => {
         .status(404)
         .json({ message: "Voucher not found to update state" });
     }
-
-    voucher.Status = voucher.Status === "enable" ? "disable" : "enable";
+    if (voucher.RemainQuantity == 0) {
+      voucher.Status = "disable";
+    } else {
+      voucher.Status = voucher.Status === "enable" ? "disable" : "enable";
+    }
 
     await voucher.save();
 

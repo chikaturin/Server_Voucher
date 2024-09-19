@@ -32,8 +32,8 @@ const VoucherSchema = new mongoose.Schema({
   Description: { type: String },
   Image: { type: String },
   RemainQuantity: { type: Number, required: true },
-  MinValue: { type: Number, required: true },
-  MaxValue: { type: Number, required: true },
+  MinValue: { type: Number },
+  MaxValue: { type: Number },
   PercentDiscount: { type: Number, required: true },
   ServiceID: { type: String },
   Partner_ID: { type: String },
@@ -81,6 +81,8 @@ const VoucherCus = mongoose.model("VoucherCus", VoucherCusSchema);
 const History = mongoose.model("History", HistorySchema);
 const ReportVoucher = mongoose.model("ReportVoucher", ReportVoucherSchema);
 const NoteVoucher = mongoose.model("NoteVoucher", NoteVoucherSchema);
+const Service = mongoose.model("Service", ServiceSchema);
+const Partner = mongoose.model("Partner", PartnerSchema);
 
 const counterVoucher = mongoose.model("CounterVoucher", counterSchema);
 const counterVoucherService = mongoose.model(
@@ -114,4 +116,6 @@ module.exports = {
   VoucherCus,
   History,
   NoteVoucher,
+  Service,
+  Partner,
 };

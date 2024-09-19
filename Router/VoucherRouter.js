@@ -38,7 +38,6 @@ router.get("/getVoucherByService", checkAPIkey, getVoucherByService);
 
 router.put("/updateVoucher/:_id", updateVoucher);
 router.post("/updateState/:_id", updateState);
-router.get("/updateState/:_id", updateState);
 router.delete("/deleteVoucher/:_id", deleteVoucher);
 
 module.exports = router;

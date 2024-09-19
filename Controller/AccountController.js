@@ -1,4 +1,6 @@
 const Account = require("../Schema/schema.js").AccountAdmin;
+const Service = require("../Schema/schema.js").Service;
+const Partner = require("../Schema/schema.js").Partner;
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs"); // Thêm thư viện bcryptjs để mã hóa mật khẩu
@@ -103,4 +105,79 @@ const getAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, signIn, getAccount, getAccountByService };
+const getService = async (req, res) => {
+  try {
+    const service = await Service.find();
+    res.json(service);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getPartner = async (req, res) => {
+  try {
+    const partner = await Partner.find();
+    res.json(partner);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const createService = async (req, res) => {
+  try {
+    const { ServiceName } = req.body;
+    const _id = `SVC${ServiceName}`;
+
+    const service = new Service({
+      _id,
+      ServiceName,
+    });
+
+    await service.save();
+
+    res.status(201).json({ message: "Service created successfully" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const createPartner = async (req, res) => {
+  try {
+    const { Name, Service_ID } = req.body;
+    const _id = `PTR${Name}`;
+    const partner = new Partner({
+      _id,
+      Name,
+      Service_ID,
+    });
+    await partner.save();
+    res.status(201).json({ message: "Partner created successfully" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const getServiceID = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const service = await Service.findById(id);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+    res.json(service);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  register,
+  signIn,
+  getAccount,
+  getAccountByService,
+  getService,
+  getPartner,
+  createService,
+  createPartner,
+  getServiceID,
+};

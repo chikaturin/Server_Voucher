@@ -15,6 +15,12 @@ const CalculateVoucher = async (req, res) => {
         return res.status(404).json({ message: "Voucher not found" });
       }
       const TotalPrice = price - (price * voucher.PercentDiscount) / 100;
+      voucher.RemainQuantity = voucher.RemainQuantity - 1;
+
+      if (voucher.RemainQuantity == 0) {
+        voucher.State = "disable";
+      }
+      await voucher.save();
       res.status(200).json({ TotalPrice });
     } else {
       const TotalPrice = price;
