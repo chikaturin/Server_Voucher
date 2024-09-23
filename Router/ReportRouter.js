@@ -6,7 +6,7 @@ const {
   deleteReportVoucher,
 } = require("../Controller/ReportController.js");
 
-router.post("/CreateReport", CreateReport);
+router.post("/createReport", CreateReport);
 router.delete("/deleteReportVoucher/:_id", deleteReportVoucher);
 
 module.exports = router;

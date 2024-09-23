@@ -20,7 +20,7 @@ const ServiceSchema = new mongoose.Schema({
 const PartnerSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   Name: { type: String, required: true },
-  Service_ID: { type: String, required: true },
+  Partner_ID: { type: String, required: true },
 });
 
 // Schema for general vouchers applicable across the entire website of a partner
@@ -50,7 +50,6 @@ const VoucherCusSchema = new mongoose.Schema({
 // Schema for payment (ThanhToan) related data
 const HistorySchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  Cus_ID: { type: String, required: true },
   Voucher_ID: { type: String, required: true },
   Service_ID: { type: String, required: true },
   TotalDiscount: { type: Number, required: true },

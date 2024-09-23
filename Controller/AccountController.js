@@ -76,7 +76,7 @@ const signIn = async (req, res) => {
 };
 
 //dịch tokken tài khoản
-const getAccountByService = async (req, res) => {
+const getAccountByPartner = async (req, res) => {
   try {
     const Service_ID = req.decoded.account;
     const Service = await Account.findById(Service_ID);
@@ -157,7 +157,7 @@ const createPartner = async (req, res) => {
   }
 };
 
-const getServiceID = async (req, res) => {
+const getPartnerID = async (req, res) => {
   try {
     const { id } = req.params;
     const service = await Service.findById(id);
@@ -174,10 +174,10 @@ module.exports = {
   register,
   signIn,
   getAccount,
-  getAccountByService,
+  getAccountByPartner,
   getService,
   getPartner,
   createService,
   createPartner,
-  getServiceID,
+  getPartnerID,
 };

@@ -4,21 +4,21 @@ const router = express.Router();
 const {
   register,
   signIn,
-  getAccountByService,
+  getAccountByPartner,
   getAccount,
   getService,
   getPartner,
   createService,
   createPartner,
-  getServiceID,
+  getPartnerID,
 } = require("../Controller/AccountController.js");
 const CheckToken = require("../Middleware/check.js").checktokken;
 
 router.post("/register", register);
 router.post("/signIn", signIn);
-router.get("/getAccountByService", CheckToken, getAccountByService);
+router.get("/getAccountByPartner", CheckToken, getAccountByPartner);
 router.get("/getAccount", getAccount);
-router.get("/getServiceID/:id", getServiceID);
+router.get("/getPartnerID/:id", getPartnerID);
 
 router.get("/getService", getService);
 router.get("/getPartner", getPartner);

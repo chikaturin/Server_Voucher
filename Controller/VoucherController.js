@@ -80,6 +80,59 @@ const createVoucherbyAdmin = async (req, res) => {
   }
 };
 
+const createVoucherDK = async (req, res) => {
+  try {
+    const { Voucher_ID, MinValue, MaxValue, PercentDiscount } = req.body;
+
+    if (ReleaseTime >= ExpiredTime) {
+      return res
+        .status(400)
+        .json({ message: "ExpiredTime must be after ReleaseTime" });
+    }
+    if (PercentDiscount < 0 || PercentDiscount > 100) {
+      return res
+        .status(400)
+        .json({ message: "PercentDiscount must be between 0 and 100" });
+    }
+    if (MinValue < 0 || MaxValue < 0) {
+      return res
+        .status(400)
+        .json({ message: "MinValue and MaxValue must be greater than 0" });
+    }
+    if (ReleaseTime < new Date()) {
+      return res
+        .status(400)
+        .json({ message: "ReleaseTime must be after current time" });
+    }
+
+    const counterVoucher = await CounterVoucherDK.findOneAndUpdate(
+      { _id: "GenaralVoucher" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    // Create unique voucher ID
+    const _id = `VC${counterVoucher.seq}`;
+    const Status = "enable";
+
+    const voucher = new VoucherDK({
+      _id,
+      MinValue,
+      MaxValue,
+      PercentDiscount,
+    });
+
+    await voucher.save();
+
+    res.status(201).json({
+      message: " Voucher created successfully",
+      voucher: voucher,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 //create voucher by service
 const createVoucherbyService = async (req, res) => {
   try {

@@ -20,6 +20,7 @@ app.use("/api", require("./Router/AccountRouter.js"));
 app.use("/api", require("./Router/VoucherRouter.js"));
 app.use("/api", require("./Router/ReportRouter.js"));
 app.use("/api", require("./Router/PayRouter.js"));
+app.use("/api", require("./Router/StatisticalRouter.js"));
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
