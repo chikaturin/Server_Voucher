@@ -5,8 +5,14 @@ const createHistory = async (req, res) => {
   try {
     const { Voucher_ID, Partner_ID, TotalDiscount, AmountUsed, Date } =
       req.body;
-    const date = new Date();
-    const _id = `HIS${CounterHistoryDB.seq}`;
+
+    let historyCounter = await CounterHistoryDB.findOneAndUpdate(
+      { _id: "Statistical" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const _id = `HIS${historyCounter.seq}`;
     const history = new HistoryDB({
       _id,
       Voucher_ID,
@@ -16,14 +22,15 @@ const createHistory = async (req, res) => {
       Date,
     });
     await history.save();
+
+    res.status(201).json({ message: "History created successfully", _id });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
 const Statistical_Voucher = async (req, res) => {
-  const { Date } = req.body;
-  const history = await HistoryDB.find({ Date });
+  const history = await HistoryDB.find();
   if (!history) {
     return res.status(404).json({ message: "History not found" });
   }
