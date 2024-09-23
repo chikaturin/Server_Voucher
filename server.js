@@ -13,7 +13,7 @@ app.use((err, req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.json("Welcome to Voucher Management System");
+  res.status(200).json("Welcome to Voucher Management System");
 });
 
 app.use("/api", require("./Router/AccountRouter.js"));

@@ -1,8 +1,7 @@
-const Voucher = require("../Schema/schema").VoucherGenaral;
+const VoucherDB = require("../Schema/schema").Voucher;
 const CounterVoucher = require("../Schema/schema").counterVoucher;
-const CounterVoucherService = require("../Schema/schema").counterVoucherService;
-const CounterVoucherPartner = require("../Schema/schema").counterVoucherPartner;
-const Account = require("../Schema/schema.js").AccountAdmin;
+const ConditionDB = require("../Schema/schema").Condition;
+const CounterCondition = require("../Schema/schema").counterCondition;
 
 const createVoucherbyAdmin = async (req, res) => {
   try {
@@ -13,32 +12,100 @@ const createVoucherbyAdmin = async (req, res) => {
       Description,
       Image,
       RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
+      Conditions,
     } = req.body;
 
-    if (!Name || !ReleaseTime || !RemainQuantity || !PercentDiscount) {
+    if (ReleaseTime >= ExpiredTime) {
       return res
         .status(400)
-        .json({ message: "All required fields must be provided" });
+        .json({ message: "ExpiredTime phải sau ReleaseTime" });
     }
+    if (ReleaseTime < new Date()) {
+      return res
+        .status(400)
+        .json({ message: "ReleaseTime phải sau thời gian hiện tại" });
+    }
+
+    const counterVoucher = await CounterVoucher.findOneAndUpdate(
+      { _id: "GenaralVoucher" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const idVoucher = `VC${counterVoucher.seq}`;
+    const States = "enable";
+
+    const voucher = new VoucherDB({
+      _id: idVoucher,
+      Name,
+      ReleaseTime,
+      ExpiredTime,
+      Description,
+      Image,
+      RemainQuantity,
+      States,
+    });
+    await voucher.save();
+
+    for (const condition of Conditions) {
+      const { MinValue, MaxValue, PercentDiscount } = condition;
+
+      const counterCondition = await CounterCondition.findOneAndUpdate(
+        { _id: "GenaralCondition" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const idCondition = `CD${counterCondition.seq}`;
+
+      if (PercentDiscount < 0 || PercentDiscount > 100) {
+        return res
+          .status(400)
+          .json({ message: "PercentDiscount phải từ 0 đến 100" });
+      }
+      if (MinValue < 0 || MaxValue < 0) {
+        return res
+          .status(400)
+          .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
+      }
+
+      const newCondition = new ConditionDB({
+        _id: idCondition,
+        Voucher_ID: idVoucher,
+        MinValue,
+        MaxValue,
+        PercentDiscount,
+      });
+      await newCondition.save();
+    }
+
+    res.status(201).json({
+      message: "Voucher và các điều kiện đã được tạo thành công",
+      voucher: voucher,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+//create voucher by partner
+const createVoucherbyPartner = async (req, res) => {
+  try {
+    const {
+      _id,
+      Name,
+      ReleaseTime,
+      ExpiredTime,
+      Description,
+      Image,
+      RemainQuantity,
+      Conditions,
+    } = req.body;
 
     if (ReleaseTime >= ExpiredTime) {
       return res
         .status(400)
         .json({ message: "ExpiredTime must be after ReleaseTime" });
     }
-    if (PercentDiscount < 0 || PercentDiscount > 100) {
-      return res
-        .status(400)
-        .json({ message: "PercentDiscount must be between 0 and 100" });
-    }
-    if (MinValue < 0 || MaxValue < 0) {
-      return res
-        .status(400)
-        .json({ message: "MinValue and MaxValue must be greater than 0" });
-    }
+
     if (ReleaseTime < new Date()) {
       return res
         .status(400)
@@ -51,11 +118,10 @@ const createVoucherbyAdmin = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    // Create unique voucher ID
-    const _id = `VC${counterVoucher.seq}`;
-    const Status = "enable";
+    const States = "enable";
+    const Partner_ID = req.decoded._id;
 
-    const voucher = new Voucher({
+    const voucher = new VoucherDB({
       _id,
       Name,
       ReleaseTime,
@@ -63,216 +129,39 @@ const createVoucherbyAdmin = async (req, res) => {
       Description,
       Image,
       RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
-      Status,
-    });
-
-    await voucher.save();
-
-    res.status(201).json({
-      message: " Voucher created successfully",
-      voucher: voucher,
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const createVoucherDK = async (req, res) => {
-  try {
-    const { Voucher_ID, MinValue, MaxValue, PercentDiscount } = req.body;
-
-    if (ReleaseTime >= ExpiredTime) {
-      return res
-        .status(400)
-        .json({ message: "ExpiredTime must be after ReleaseTime" });
-    }
-    if (PercentDiscount < 0 || PercentDiscount > 100) {
-      return res
-        .status(400)
-        .json({ message: "PercentDiscount must be between 0 and 100" });
-    }
-    if (MinValue < 0 || MaxValue < 0) {
-      return res
-        .status(400)
-        .json({ message: "MinValue and MaxValue must be greater than 0" });
-    }
-    if (ReleaseTime < new Date()) {
-      return res
-        .status(400)
-        .json({ message: "ReleaseTime must be after current time" });
-    }
-
-    const counterVoucher = await CounterVoucherDK.findOneAndUpdate(
-      { _id: "GenaralVoucher" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-
-    // Create unique voucher ID
-    const _id = `VC${counterVoucher.seq}`;
-    const Status = "enable";
-
-    const voucher = new VoucherDK({
-      _id,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
-    });
-
-    await voucher.save();
-
-    res.status(201).json({
-      message: " Voucher created successfully",
-      voucher: voucher,
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-//create voucher by service
-const createVoucherbyService = async (req, res) => {
-  try {
-    const {
-      Name,
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
-    } = req.body;
-
-    if (
-      !Name ||
-      !ReleaseTime ||
-      !RemainQuantity ||
-      !MinValue ||
-      !MaxValue ||
-      !PercentDiscount
-    ) {
-      return res
-        .status(400)
-        .json({ message: "All required fields must be provided" });
-    }
-
-    if (ReleaseTime >= ExpiredTime) {
-      return res
-        .status(400)
-        .json({ message: "ExpiredTime must be after ReleaseTime" });
-    }
-
-    const counterVoucher = await CounterVoucherService.findOneAndUpdate(
-      { _id: "GenaralVoucher" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-
-    // Create unique voucher ID
-    const _id = `VCService${counterVoucher.seq}`;
-    const Service_ID = req.decoded.account;
-    const Status = "enable";
-
-    const voucher = new Voucher({
-      _id,
-      Name,
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
-      Service_ID,
-      Status,
-    });
-
-    await voucher.save();
-
-    res.status(200).json({
-      message: " Voucher created successfully",
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-//create voucher by partner
-const createVoucherbyPartner = async (req, res) => {
-  try {
-    const {
-      Name,
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
-    } = req.body;
-
-    if (
-      !Name ||
-      !ReleaseTime ||
-      !RemainQuantity ||
-      !MinValue ||
-      !MaxValue ||
-      !PercentDiscount
-    ) {
-      return res
-        .status(400)
-        .json({ message: "All required fields must be provided" });
-    }
-
-    if (ReleaseTime >= ExpiredTime) {
-      return res
-        .status(400)
-        .json({ message: "ExpiredTime must be after ReleaseTime" });
-    }
-
-    const counterVoucher = await CounterVoucherPartner.findOneAndUpdate(
-      { _id: "GenaralVoucher" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-
-    // Create unique voucher ID
-    const _id = `VCPartner${counterVoucher.seq}`;
-
-    const Service_ID = req.service._id;
-    // Lấy Service_ID từ apiKey đã giải mã
-    const Partner_ID = req.decoded.account;
-    // Lấy Service_ID từ token đã giải mã
-
-    const Status = "enable";
-
-    const voucher = new Voucher({
-      _id,
-      Name,
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
-      Service_ID,
+      States,
       Partner_ID,
-      Status,
     });
 
     await voucher.save();
 
+    for (const condition of Conditions) {
+      const { MinValue, MaxValue, PercentDiscount } = condition;
+
+      if (PercentDiscount < 0 || PercentDiscount > 100) {
+        return res
+          .status(400)
+          .json({ message: "PercentDiscount phải từ 0 đến 100" });
+      }
+      if (MinValue < 0 || MaxValue < 0) {
+        return res
+          .status(400)
+          .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
+      }
+
+      const Condition = new ConditionDB({
+        _id: _id,
+        MinValue,
+        MaxValue,
+        PercentDiscount,
+      });
+
+      await Condition.save();
+    }
+
     res.status(201).json({
-      message: " Voucher created successfully",
+      message: "Voucher và các điều kiện đã được tạo thành công",
+      voucher: voucher,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -282,9 +171,9 @@ const createVoucherbyPartner = async (req, res) => {
 const DetailVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const voucher = await Voucher.findById(_id);
+    const voucher = await VoucherDB.findById(_id);
     if (!voucher) {
-      return res.status(404).json({ message: "Voucher not found" });
+      return res.status(404).json({ message: "VoucherDB not found" });
     }
     res.json(voucher);
   } catch (error) {
@@ -301,35 +190,24 @@ const updateVoucher = async (req, res) => {
       Description,
       Image,
       RemainQuantity,
-      MinValue,
-      MaxValue,
-      PercentDiscount,
+      Conditions,
     } = req.body;
 
-    const voucher = await Voucher.findById(_id);
+    const voucher = await VoucherDB.findById(_id);
+
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher not found" });
+    }
 
     if (ReleaseTime >= ExpiredTime) {
       return res
         .status(400)
         .json({ message: "ExpiredTime must be after ReleaseTime" });
     }
-    if (PercentDiscount < 0 || PercentDiscount > 100) {
-      return res
-        .status(400)
-        .json({ message: "PercentDiscount must be between 0 and 100" });
-    }
-    if (MinValue < 0 || MaxValue < 0) {
-      return res
-        .status(400)
-        .json({ message: "MinValue and MaxValue must be greater than 0" });
-    }
     if (ReleaseTime < new Date()) {
       return res
         .status(400)
         .json({ message: "ReleaseTime must be after current time" });
-    }
-    if (!voucher) {
-      return res.status(404).json({ message: "Voucher not found" });
     }
 
     voucher.ReleaseTime = ReleaseTime;
@@ -337,14 +215,44 @@ const updateVoucher = async (req, res) => {
     voucher.Description = Description;
     voucher.Image = Image;
     voucher.RemainQuantity = RemainQuantity;
-    voucher.MinValue = MinValue;
-    voucher.MaxValue = MaxValue;
-    voucher.PercentDiscount = PercentDiscount;
 
     await voucher.save();
 
+    for (const condition of Conditions) {
+      const {
+        _id: conditionId,
+        MinValue,
+        MaxValue,
+        PercentDiscount,
+      } = condition;
+
+      const existingCondition = await Condition.findById(conditionId);
+      if (!existingCondition) {
+        return res
+          .status(404)
+          .json({ message: `Condition with ID ${conditionId} not found` });
+      }
+
+      if (PercentDiscount < 0 || PercentDiscount > 100) {
+        return res
+          .status(400)
+          .json({ message: "PercentDiscount must be between 0 and 100" });
+      }
+      if (MinValue < 0 || MaxValue < 0) {
+        return res
+          .status(400)
+          .json({ message: "MinValue and MaxValue must be greater than 0" });
+      }
+
+      existingCondition.MinValue = MinValue;
+      existingCondition.MaxValue = MaxValue;
+      existingCondition.PercentDiscount = PercentDiscount;
+
+      await existingCondition.save();
+    }
+
     res.json({
-      message: "Voucher updated successfully and status is set to enable",
+      message: "Voucher updated successfully and conditions are updated",
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -355,12 +263,12 @@ const updateVoucher = async (req, res) => {
 const deleteVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const voucher = await Voucher.findByIdAndDelete(_id);
+    const voucher = await VoucherDB.findByIdAndDelete(_id);
 
     if (!voucher) {
-      return res.status(404).json({ message: " Voucher not found" });
+      return res.status(404).json({ message: " VoucherDB not found" });
     }
-    res.json({ message: " Voucher deleted successfully" });
+    res.json({ message: " VoucherDB deleted successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -369,21 +277,22 @@ const deleteVoucher = async (req, res) => {
 //get voucher by admin voucher lấy tất cả voucher để xem bởi admin
 const getVoucherByAdmin = async (req, res) => {
   try {
-    const voucher = await Voucher.find();
-    res.json(voucher);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    const vouchersWithConditions = await VoucherDB.aggregate([
+      {
+        $lookup: {
+          from: "conditions",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "conditions",
+        },
+      },
+    ]);
 
-//get voucher by service ở trên web của mình
-const getvoucherManagerbyService = async (req, res) => {
-  try {
-    const Service_ID = req.decoded.account;
-    const voucher = await Voucher.find({
-      Service_ID: Service_ID,
-    });
-    res.json(voucher);
+    if (vouchersWithConditions.length === 0) {
+      return res.status(404).json({ message: "No vouchers found" });
+    }
+
+    res.json(vouchersWithConditions);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -392,32 +301,10 @@ const getvoucherManagerbyService = async (req, res) => {
 //get voucher by partner ở trên web của mình
 const getvoucherManagerbyPartner = async (req, res) => {
   try {
-    const Partner_ID = req.decoded.account;
-    const voucher = await Voucher.find({
+    const Partner_ID = req.decoded._id;
+    const voucher = await VoucherDB.find({
       Partner_ID: Partner_ID,
     });
-    res.json(voucher);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-//get voucher by service ở trên web service của họ nên cần API key và partner ID
-const getVoucherByService = async (req, res) => {
-  const { Partner_ID } = req.body;
-  try {
-    const currentDate = new Date();
-
-    const voucher = await Voucher.find({
-      $or: [
-        { ServiceID: "null" },
-        { ServiceID: req.service._id },
-        { Partner_ID: Partner_ID },
-      ],
-      ExpiredTime: { $gt: currentDate },
-      RemainQuantity: { $gt: 0 },
-    });
-
     res.json(voucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -428,16 +315,16 @@ const updateState = async (req, res) => {
   try {
     const { _id } = req.params;
 
-    const voucher = await Voucher.findById(_id);
+    const voucher = await VoucherDB.findById(_id);
     if (!voucher) {
       return res
         .status(404)
-        .json({ message: "Voucher not found to update state" });
+        .json({ message: "VoucherDB not found to update state" });
     }
     if (voucher.RemainQuantity == 0) {
-      voucher.Status = "disable";
+      voucher.States = "disable";
     } else {
-      voucher.Status = voucher.Status === "enable" ? "disable" : "enable";
+      voucher.States = voucher.States === "enable" ? "disable" : "enable";
     }
 
     await voucher.save();
@@ -450,14 +337,11 @@ const updateState = async (req, res) => {
 
 module.exports = {
   createVoucherbyAdmin,
-  createVoucherbyService,
   createVoucherbyPartner,
   updateVoucher,
   deleteVoucher,
   getVoucherByAdmin,
-  getvoucherManagerbyService,
   getvoucherManagerbyPartner,
-  getVoucherByService,
   DetailVoucher,
   updateState,
 };
