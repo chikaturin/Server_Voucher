@@ -3,7 +3,8 @@ const CounterHistoryDB = require("../Schema/schema").counterHistory;
 
 const createHistory = async (req, res) => {
   try {
-    const { Voucher_ID, Partner_ID, TotalDiscount, AmountUsed } = req.body;
+    const { Voucher_ID, Partner_ID, TotalDiscount, AmountUsed, Date } =
+      req.body;
     const date = new Date();
     const _id = `HIS${CounterHistoryDB.seq}`;
     const history = new HistoryDB({
@@ -12,7 +13,7 @@ const createHistory = async (req, res) => {
       Partner_ID,
       TotalDiscount,
       AmountUsed,
-      Date: date,
+      Date,
     });
     await history.save();
   } catch (error) {
