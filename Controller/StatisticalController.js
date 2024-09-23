@@ -30,7 +30,7 @@ const createHistory = async (req, res) => {
 };
 
 const Statistical_Voucher = async (req, res) => {
-  const history = await HistoryDB.find();
+  const history = await HistoryDB.find({});
   if (!history) {
     return res.status(404).json({ message: "History not found" });
   }
