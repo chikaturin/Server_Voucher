@@ -4,7 +4,6 @@ const ConditionDB = require("../Schema/schema").Condition;
 const CounterCondition = require("../Schema/schema").counterCondition;
 const HaveVoucherDB = require("../Schema/schema").HaveVoucher;
 const CounterHaveVoucher = require("../Schema/schema").counterHaveVoucher;
-const mongoose = require("mongoose");
 
 const createVoucherbyAdmin = async (req, res) => {
   try {
