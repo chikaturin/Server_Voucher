@@ -2,6 +2,9 @@ const VoucherDB = require("../Schema/schema").Voucher;
 const CounterVoucher = require("../Schema/schema").counterVoucher;
 const ConditionDB = require("../Schema/schema").Condition;
 const CounterCondition = require("../Schema/schema").counterCondition;
+const HaveVoucherDB = require("../Schema/schema").HaveVoucher;
+const CounterHaveVoucher = require("../Schema/schema").counterHaveVoucher;
+const mongoose = require("mongoose");
 
 const createVoucherbyAdmin = async (req, res) => {
   try {
@@ -13,6 +16,7 @@ const createVoucherbyAdmin = async (req, res) => {
       Image,
       RemainQuantity,
       Conditions,
+      HaveVouchers,
     } = req.body;
 
     if (ReleaseTime >= ExpiredTime) {
@@ -77,6 +81,22 @@ const createVoucherbyAdmin = async (req, res) => {
       await newCondition.save();
     }
 
+    for (const haveVoucher of HaveVouchers) {
+      const { Service_ID } = haveVoucher;
+      const counterHaveVoucher = await CounterHaveVoucher.findOneAndUpdate(
+        { _id: "GenaralHaveVoucher" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const idHaveVoucher = `HV${counterHaveVoucher.seq}`;
+      const newHaveVoucher = new HaveVoucherDB({
+        _id: idHaveVoucher,
+        Voucher_ID: idVoucher,
+        Service_ID,
+      });
+      await newHaveVoucher.save();
+    }
+
     res.status(201).json({
       message: "Voucher và các điều kiện đã được tạo thành công",
       voucher: voucher,
@@ -86,11 +106,10 @@ const createVoucherbyAdmin = async (req, res) => {
   }
 };
 
-//create voucher by partner
+//-------------------------------------------------create voucher by partner
 const createVoucherbyPartner = async (req, res) => {
   try {
     const {
-      _id,
       Name,
       ReleaseTime,
       ExpiredTime,
@@ -98,18 +117,18 @@ const createVoucherbyPartner = async (req, res) => {
       Image,
       RemainQuantity,
       Conditions,
+      HaveVouchers,
     } = req.body;
 
     if (ReleaseTime >= ExpiredTime) {
       return res
         .status(400)
-        .json({ message: "ExpiredTime must be after ReleaseTime" });
+        .json({ message: "ExpiredTime phải sau ReleaseTime" });
     }
-
     if (ReleaseTime < new Date()) {
       return res
         .status(400)
-        .json({ message: "ReleaseTime must be after current time" });
+        .json({ message: "ReleaseTime phải sau thời gian hiện tại" });
     }
 
     const counterVoucher = await CounterVoucher.findOneAndUpdate(
@@ -117,26 +136,31 @@ const createVoucherbyPartner = async (req, res) => {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-
+    const idVoucher = `VC${counterVoucher.seq}`;
     const States = "enable";
-    const Partner_ID = req.decoded._id;
-
+    const Partner_ID = decoded._id;
     const voucher = new VoucherDB({
-      _id,
+      _id: idVoucher,
       Name,
+      Partner_ID,
       ReleaseTime,
       ExpiredTime,
       Description,
       Image,
       RemainQuantity,
       States,
-      Partner_ID,
     });
-
     await voucher.save();
 
     for (const condition of Conditions) {
       const { MinValue, MaxValue, PercentDiscount } = condition;
+
+      const counterCondition = await CounterCondition.findOneAndUpdate(
+        { _id: "GenaralCondition" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const idCondition = `CD${counterCondition.seq}`;
 
       if (PercentDiscount < 0 || PercentDiscount > 100) {
         return res
@@ -149,14 +173,30 @@ const createVoucherbyPartner = async (req, res) => {
           .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
       }
 
-      const Condition = new ConditionDB({
-        _id: _id,
+      const newCondition = new ConditionDB({
+        _id: idCondition,
+        Voucher_ID: idVoucher,
         MinValue,
         MaxValue,
         PercentDiscount,
       });
+      await newCondition.save();
+    }
 
-      await Condition.save();
+    for (const haveVoucher of HaveVouchers) {
+      const { Service_ID } = haveVoucher;
+      const counterHaveVoucher = await CounterHaveVoucher.findOneAndUpdate(
+        { _id: "GenaralHaveVoucher" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const idHaveVoucher = `HV${counterHaveVoucher.seq}`;
+      const newHaveVoucher = new HaveVoucherDB({
+        _id: idHaveVoucher,
+        Voucher_ID: idVoucher,
+        Service_ID,
+      });
+      await newHaveVoucher.save();
     }
 
     res.status(201).json({
@@ -167,31 +207,43 @@ const createVoucherbyPartner = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
+//-------------------------------------------------------------detailvoucher
 const DetailVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const voucher = await VoucherDB.findById(_id);
-    if (!voucher) {
-      return res.status(404).json({ message: "VoucherDB not found" });
-    }
-    res.json(voucher);
+
+    const vouchersWithDetails = await VoucherDB.aggregate([
+      {
+        $match: { _id },
+      },
+      {
+        $lookup: {
+          from: "conditions",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "conditions",
+        },
+      },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "haveVouchers",
+        },
+      },
+    ]);
+    res.json(vouchersWithDetails);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
+//---------------------------------------------------------------Update
 const updateVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const {
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      Conditions,
-    } = req.body;
+    const { ReleaseTime, ExpiredTime, Description, Image, RemainQuantity } =
+      req.body;
 
     const voucher = await VoucherDB.findById(_id);
 
@@ -218,39 +270,6 @@ const updateVoucher = async (req, res) => {
 
     await voucher.save();
 
-    for (const condition of Conditions) {
-      const {
-        _id: conditionId,
-        MinValue,
-        MaxValue,
-        PercentDiscount,
-      } = condition;
-
-      const existingCondition = await Condition.findById(conditionId);
-      if (!existingCondition) {
-        return res
-          .status(404)
-          .json({ message: `Condition with ID ${conditionId} not found` });
-      }
-
-      if (PercentDiscount < 0 || PercentDiscount > 100) {
-        return res
-          .status(400)
-          .json({ message: "PercentDiscount must be between 0 and 100" });
-      }
-      if (MinValue < 0 || MaxValue < 0) {
-        return res
-          .status(400)
-          .json({ message: "MinValue and MaxValue must be greater than 0" });
-      }
-
-      existingCondition.MinValue = MinValue;
-      existingCondition.MaxValue = MaxValue;
-      existingCondition.PercentDiscount = PercentDiscount;
-
-      await existingCondition.save();
-    }
-
     res.json({
       message: "Voucher updated successfully and conditions are updated",
     });
@@ -259,7 +278,7 @@ const updateVoucher = async (req, res) => {
   }
 };
 
-//delete voucher
+//---------------------------------------------------------delete voucher
 const deleteVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
@@ -274,10 +293,10 @@ const deleteVoucher = async (req, res) => {
   }
 };
 
-//get voucher by admin voucher lấy tất cả voucher để xem bởi admin
+//---------------------------------------get voucher by admin voucher lấy tất cả voucher để xem bởi admin
 const getVoucherByAdmin = async (req, res) => {
   try {
-    const vouchersWithConditions = await VoucherDB.aggregate([
+    const vouchersWithDetails = await VoucherDB.aggregate([
       {
         $lookup: {
           from: "conditions",
@@ -286,19 +305,27 @@ const getVoucherByAdmin = async (req, res) => {
           as: "conditions",
         },
       },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "haveVouchers",
+        },
+      },
     ]);
 
-    if (vouchersWithConditions.length === 0) {
+    if (vouchersWithDetails.length === 0) {
       return res.status(404).json({ message: "No vouchers found" });
     }
 
-    res.json(vouchersWithConditions);
+    res.json(vouchersWithDetails);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-//get voucher by partner ở trên web của mình
+//----------------------------------------------get voucher by partner ở trên web của mình
 const getvoucherManagerbyPartner = async (req, res) => {
   try {
     const Partner_ID = req.decoded._id;
@@ -310,7 +337,7 @@ const getvoucherManagerbyPartner = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
+//---------------------------------------updateState
 const updateState = async (req, res) => {
   try {
     const { _id } = req.params;
