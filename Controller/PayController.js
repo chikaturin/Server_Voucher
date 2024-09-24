@@ -1,8 +1,8 @@
 const Voucher = require("../Schema/schema").Voucher;
-const NoteVoucher = require("../Schema/schema").NoteVoucher;
 const History = require("../Schema/schema").History;
+const HaveVoucher = require("../Schema/schema").HaveVoucher;
+const Condition = require("../Schema/schema").Condition;
 
-//
 const CalculateVoucher = async (req, res) => {
   try {
     const { _id } = req.body;
@@ -18,7 +18,7 @@ const CalculateVoucher = async (req, res) => {
       voucher.RemainQuantity = voucher.RemainQuantity - 1;
 
       if (voucher.RemainQuantity == 0) {
-        voucher.State = "disable";
+        voucher.States = "disable";
       }
       await voucher.save();
       res.status(200).json({ TotalPrice });
@@ -66,4 +66,44 @@ const UsedVoucher = async (req, res) => {
   }
 };
 
-module.exports = { CalculateVoucher, UsedVoucher };
+const UseVoucher = async (req, res) => {
+  try {
+    const { Service_ID, Partner_ID, Price } = req.body;
+    const havevoucher = await HaveVoucher.find({ Service_ID });
+    if (!havevoucher.length) {
+      return res.status(404).json({ message: "HaveVoucher not found" });
+    }
+
+    const voucherIDs = havevoucher.map((v) => v.Voucher_ID);
+
+    const voucher = await Voucher.aggregate([
+      {
+        $match: {
+          _id: { $in: voucherIDs },
+          $or: [{ Partner_ID: null }, { Partner_ID }],
+          MinCondition: { $lte: Price },
+        },
+      },
+      {
+        $lookup: {
+          from: "conditions",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "conditions",
+        },
+      },
+    ]);
+
+    if (!voucher.length) {
+      return res
+        .status(404)
+        .json({ message: "Voucher or conditions not found" });
+    }
+
+    res.status(200).json({ voucher });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { CalculateVoucher, UsedVoucher, UseVoucher };

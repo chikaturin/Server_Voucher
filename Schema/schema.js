@@ -47,6 +47,7 @@ const VoucherSchema = new mongoose.Schema({
   RemainQuantity: { type: Number, required: true },
   States: { type: String, required: true },
   Partner_ID: { type: String },
+  MinCondition: { type: Number },
 });
 
 // Schema for payment (ThanhToan) related data

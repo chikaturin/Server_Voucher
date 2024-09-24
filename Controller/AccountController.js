@@ -6,23 +6,20 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs"); // Thêm thư viện bcryptjs để mã hóa mật khẩu
 const crypto = require("crypto"); // Thêm thư viện crypto để tạo API Key ngẫu nhiên
 dotenv.config();
-
 const register = async (req, res) => {
   try {
-    const { ServiceName, PassWord, Service } = req.body;
-    const _id = ServiceName;
+    const { Name, PassWord } = req.body;
+    const _id = Name + "1";
     const Api_key = crypto.randomBytes(16).toString("hex");
 
     // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(PassWord, 10);
 
-    // Tạo API Key ngẫu nhiên
+    // Tạo đối tượng Account
     const account = new Account({
       _id,
-      ServiceName,
+      Name,
       PassWord: hashedPassword,
-      Service,
-      Api_key,
     });
 
     await account.save();
@@ -35,8 +32,8 @@ const register = async (req, res) => {
 
 const signIn = async (req, res) => {
   try {
-    const { ServiceName, PassWord } = req.body;
-    const account = await Account.findOne({ ServiceName });
+    const { Name, PassWord } = req.body;
+    const account = await Account.findOne({ Name });
 
     if (!account) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -56,10 +53,8 @@ const signIn = async (req, res) => {
     // Create access token
     const AccessTokken = jwt.sign(
       {
-        account: account._id.toString(),
-        ServiceName: account.ServiceName,
-        Service: account.Service,
-        apiKey: account.Api_key,
+        _id: account._id,
+        Name: account.Name,
       },
       process.env.ACCESS_TOKEN_SECRET
     );
@@ -67,7 +62,7 @@ const signIn = async (req, res) => {
     res.json({
       AccessTokken,
       message: "Access Token created successfully",
-      Name: ServiceName,
+      Name: Name,
       Pass: PassWord,
     });
   } catch (error) {

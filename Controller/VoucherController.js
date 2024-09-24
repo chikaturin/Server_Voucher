@@ -37,18 +37,7 @@ const createVoucherbyAdmin = async (req, res) => {
     const idVoucher = `VC${counterVoucher.seq}`;
     const States = "enable";
 
-    const voucher = new VoucherDB({
-      _id: idVoucher,
-      Name,
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      States,
-    });
-    await voucher.save();
-
+    let min = Conditions[0].MinValue;
     for (const condition of Conditions) {
       const { MinValue, MaxValue, PercentDiscount } = condition;
 
@@ -70,6 +59,9 @@ const createVoucherbyAdmin = async (req, res) => {
           .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
       }
 
+      if (min > MinValue) {
+        min = MinValue;
+      }
       const newCondition = new ConditionDB({
         _id: idCondition,
         Voucher_ID: idVoucher,
@@ -79,6 +71,19 @@ const createVoucherbyAdmin = async (req, res) => {
       });
       await newCondition.save();
     }
+
+    const voucher = new VoucherDB({
+      _id: idVoucher,
+      Name,
+      ReleaseTime,
+      ExpiredTime,
+      Description,
+      Image,
+      RemainQuantity,
+      States,
+      MinCondition: min,
+    });
+    await voucher.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -137,19 +142,12 @@ const createVoucherbyPartner = async (req, res) => {
     );
     const idVoucher = `VC${counterVoucher.seq}`;
     const States = "enable";
-    const Partner_ID = decoded._id;
-    const voucher = new VoucherDB({
-      _id: idVoucher,
-      Name,
-      Partner_ID,
-      ReleaseTime,
-      ExpiredTime,
-      Description,
-      Image,
-      RemainQuantity,
-      States,
-    });
-    await voucher.save();
+    const partner_ID = req.decoded?._id;
+    if (!partner_ID) {
+      return res.status(400).json({ message: "Không tìm thấy partner_ID" });
+    }
+
+    let min = Conditions[0].MinValue;
 
     for (const condition of Conditions) {
       const { MinValue, MaxValue, PercentDiscount } = condition;
@@ -172,6 +170,10 @@ const createVoucherbyPartner = async (req, res) => {
           .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
       }
 
+      if (min > MinValue) {
+        min = MinValue;
+      }
+
       const newCondition = new ConditionDB({
         _id: idCondition,
         Voucher_ID: idVoucher,
@@ -181,6 +183,20 @@ const createVoucherbyPartner = async (req, res) => {
       });
       await newCondition.save();
     }
+
+    const voucher = new VoucherDB({
+      _id: idVoucher,
+      Name,
+      Partner_ID: partner_ID,
+      ReleaseTime,
+      ExpiredTime,
+      Description,
+      Image,
+      RemainQuantity,
+      States,
+      MinCondition: min,
+    });
+    await voucher.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -328,9 +344,25 @@ const getVoucherByAdmin = async (req, res) => {
 const getvoucherManagerbyPartner = async (req, res) => {
   try {
     const Partner_ID = req.decoded._id;
-    const voucher = await VoucherDB.find({
-      Partner_ID: Partner_ID,
-    });
+    const voucher = await VoucherDB.aggregate([
+      { $match: { Partner_ID: Partner_ID } },
+      {
+        $lookup: {
+          from: "conditions",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "conditions",
+        },
+      },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "haveVouchers",
+        },
+      },
+    ]);
     res.json(voucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
