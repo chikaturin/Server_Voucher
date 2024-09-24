@@ -5,35 +5,45 @@ const Condition = require("../Schema/schema").Condition;
 
 const CalculateVoucher = async (req, res) => {
   try {
-    const { _id } = req.body;
-    const { price } = req.body;
-    const { product_ID } = req.body;
+    const { _id, Price } = req.body;
 
-    if (!_id == null) {
-      const voucher = await Voucher.findById(_id);
-      if (!voucher) {
-        return res.status(404).json({ message: "Voucher not found" });
-      }
-      const TotalPrice = price - (price * voucher.PercentDiscount) / 100;
-      voucher.RemainQuantity = voucher.RemainQuantity - 1;
-
-      if (voucher.RemainQuantity == 0) {
-        voucher.States = "disable";
-      }
-      await voucher.save();
-      res.status(200).json({ TotalPrice });
-    } else {
-      const TotalPrice = price;
-      res.status(200).json({ TotalPrice });
+    const voucher = await Voucher.findOne({ _id });
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher not found" });
     }
 
-    const noteVoucher = new NoteVoucher({
-      Voucher_ID: _id,
-      Product_ID: product_ID,
-      Price: price,
-      State: "using",
-    });
-    await noteVoucher.save();
+    const conditions = await Condition.find({ Voucher_ID: voucher._id });
+
+    if (!conditions.length) {
+      return res
+        .status(404)
+        .json({ message: "No conditions found for this voucher" });
+    }
+
+    let max = 0;
+    let selectedCondition = null;
+
+    for (const condition of conditions) {
+      if (condition.MinValue > max && condition.MinValue <= Price) {
+        max = condition.MinValue;
+        selectedCondition = condition;
+      }
+    }
+
+    if (!selectedCondition) {
+      return res.status(404).json({ message: "No applicable condition found" });
+    }
+
+    let priceDiscount = 0;
+    const discount = (selectedCondition.PercentDiscount * Price) / 100;
+
+    if (discount < selectedCondition.MaxValue) {
+      priceDiscount = discount;
+    } else {
+      priceDiscount = selectedCondition.MaxValue;
+    }
+
+    res.status(200).json({ priceDiscount });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -80,7 +90,7 @@ const UseVoucher = async (req, res) => {
       {
         $match: {
           _id: { $in: voucherIDs },
-          $or: [{ Partner_ID: null }, { Partner_ID }],
+          $or: [{ Partner_ID }, { Partner_ID: null }],
           MinCondition: { $lte: Price },
         },
       },
