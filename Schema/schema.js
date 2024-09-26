@@ -55,7 +55,6 @@ const HistorySchema = new mongoose.Schema({
   _id: { type: String, required: true },
   Voucher_ID: { type: String, required: true },
   TotalDiscount: { type: Number, required: true },
-  AmountUsed: { type: Number, required: true },
   Date: { type: Date, required: true },
 });
 

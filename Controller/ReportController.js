@@ -1,11 +1,25 @@
 const ReportVoucher = require("../Schema/schema").ReportVoucher;
-const CounterReportVoucher = require("../Schema/schema").counterReportVoucher;
+const CounterReport = require("../Schema/schema").counterReport;
 
 const CreateReport = async (req, res) => {
   try {
     const { Content, Voucher_ID, ReportedBy } = req.body;
     const DayReport = new Date();
-    const _id = `RP${CounterReportVoucher.seq}`;
+    const counter = await CounterReport.findOneAndUpdate(
+      { _id: "Report" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const _id = `RPT${counter.seq}`;
+    const reportVoucher = new ReportVoucher({
+      _id,
+      Content,
+      DayReport,
+      Voucher_ID,
+      ReportedBy,
+    });
+    await reportVoucher.save();
+    res.status(201).json({ message: "Create ReportVoucher successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

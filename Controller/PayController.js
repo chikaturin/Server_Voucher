@@ -2,6 +2,7 @@ const Voucher = require("../Schema/schema").Voucher;
 const History = require("../Schema/schema").History;
 const HaveVoucher = require("../Schema/schema").HaveVoucher;
 const Condition = require("../Schema/schema").Condition;
+const CounterHistory = require("../Schema/schema").counterHistory;
 
 const CalculateVoucher = async (req, res) => {
   try {
@@ -51,26 +52,31 @@ const CalculateVoucher = async (req, res) => {
 
 const UsedVoucher = async (req, res) => {
   try {
-    const { Product_ID } = req.params;
-    const noteVoucher = await NoteVoucher.findOne({ Product_ID });
-    if (!noteVoucher) {
-      return res.status(404).json({ message: "NoteVoucher not found" });
+    const { _id } = req.body;
+    const voucher = await Voucher.findByIdAndUpdate(
+      { _id },
+      { RemainQuantity: RemainQuantity - 1 },
+      { new: true }
+    );
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher not found" });
     }
 
+    const counterID = await CounterHistory.findOneAndUpdate(
+      { _id: "counterHistory" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const _idhis = `HIS${counterID.seq}`;
+
     const history = new History({
-      Voucher_ID: noteVoucher.Voucher_ID,
-      Product_ID: noteVoucher.Product_ID,
-      AmountUsed: noteVoucher.Price,
+      _id: _idhis,
+      Voucher_ID: _id,
+      TotalDiscount: Price,
       Date: new Date(),
     });
     await history.save();
-
-    res.status(200).json({ message: "Used Voucher successfully" });
-
-    //save in history
-    const DeletenoteVoucher = await NoteVoucher.findOneAndDelete({
-      Product_ID,
-    });
+    res.status(200).json(history);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
