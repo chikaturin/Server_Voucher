@@ -23,7 +23,7 @@ const createVoucherbyAdmin = async (req, res) => {
         .status(400)
         .json({ message: "ExpiredTime phải sau ReleaseTime" });
     }
-    if (ReleaseTime < new Date.now()) {
+    if (ReleaseTime < Date.now()) {
       return res
         .status(400)
         .json({ message: "ReleaseTime phải sau thời gian hiện tại" });
@@ -35,7 +35,7 @@ const createVoucherbyAdmin = async (req, res) => {
       { new: true, upsert: true }
     );
     const idVoucher = `VC${counterVoucher.seq}`;
-    const States = "enable";
+    const States = "disable";
 
     let min = Conditions[0].MinValue;
     for (const condition of Conditions) {
