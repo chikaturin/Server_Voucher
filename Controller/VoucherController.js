@@ -17,16 +17,20 @@ const createVoucherbyAdmin = async (req, res) => {
       Conditions,
       HaveVouchers,
     } = req.body;
-
+    const AmountUsed = 0;
     if (ReleaseTime >= ExpiredTime) {
       return res
         .status(400)
         .json({ message: "ExpiredTime phải sau ReleaseTime" });
     }
-    if (ReleaseTime < Date.now()) {
+    if (new Date(ReleaseTime).getTime() < Date.now()) {
       return res
         .status(400)
-        .json({ message: "ReleaseTime phải sau thời gian hiện tại" });
+        .json({ message: "Ngày sử dụng voucher phải sau thời gian hiện tại" });
+    }
+    let States = "disable";
+    if (new Date(ReleaseTime).getTime() == Date.now()) {
+      States = "enable";
     }
 
     const counterVoucher = await CounterVoucher.findOneAndUpdate(
@@ -35,7 +39,6 @@ const createVoucherbyAdmin = async (req, res) => {
       { new: true, upsert: true }
     );
     const idVoucher = `VC${counterVoucher.seq}`;
-    const States = "disable";
 
     let min = Conditions[0].MinValue;
     for (const condition of Conditions) {
@@ -81,6 +84,7 @@ const createVoucherbyAdmin = async (req, res) => {
       Image,
       RemainQuantity,
       States,
+      AmountUsed,
       MinCondition: min,
     });
     await voucher.save();
@@ -124,15 +128,20 @@ const createVoucherbyPartner = async (req, res) => {
       HaveVouchers,
     } = req.body;
 
+    const AmountUsed = 0;
     if (ReleaseTime >= ExpiredTime) {
       return res
         .status(400)
         .json({ message: "ExpiredTime phải sau ReleaseTime" });
     }
-    if (ReleaseTime < new Date()) {
+    if (new Date(ReleaseTime).getTime() < Date.now()) {
       return res
         .status(400)
-        .json({ message: "ReleaseTime phải sau thời gian hiện tại" });
+        .json({ message: "Ngày sử dụng voucher phải sau thời gian hiện tại" });
+    }
+    let States = "disable";
+    if (new Date(ReleaseTime).getTime() == Date.now()) {
+      States = "enable";
     }
 
     const counterVoucher = await CounterVoucher.findOneAndUpdate(
@@ -141,7 +150,6 @@ const createVoucherbyPartner = async (req, res) => {
       { new: true, upsert: true }
     );
     const idVoucher = `VC${counterVoucher.seq}`;
-    const States = "enable";
     const partner_ID = req.decoded?._id;
     if (!partner_ID) {
       return res.status(400).json({ message: "Không tìm thấy partner_ID" });
@@ -194,6 +202,7 @@ const createVoucherbyPartner = async (req, res) => {
       Image,
       RemainQuantity,
       States,
+      AmountUsed,
       MinCondition: min,
     });
     await voucher.save();

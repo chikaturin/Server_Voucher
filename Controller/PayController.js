@@ -52,10 +52,12 @@ const CalculateVoucher = async (req, res) => {
 
 const UsedVoucher = async (req, res) => {
   try {
-    const { _id } = req.body;
+    const { _id, CusID } = req.body;
     const voucher = await Voucher.findByIdAndUpdate(
-      { _id },
-      { RemainQuantity: RemainQuantity - 1 },
+      _id,
+      {
+        $inc: { RemainQuantity: -1, AmountUsed: 1 },
+      },
       { new: true }
     );
     if (!voucher) {
@@ -72,6 +74,7 @@ const UsedVoucher = async (req, res) => {
     const history = new History({
       _id: _idhis,
       Voucher_ID: _id,
+      CusID,
       TotalDiscount: Price,
       Date: new Date(),
     });

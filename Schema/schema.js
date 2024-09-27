@@ -47,6 +47,7 @@ const VoucherSchema = new mongoose.Schema({
   RemainQuantity: { type: Number, required: true },
   States: { type: String, required: true },
   Partner_ID: { type: String },
+  AmountUsed: { type: String, required: true },
   MinCondition: { type: Number },
 });
 
@@ -55,6 +56,7 @@ const HistorySchema = new mongoose.Schema({
   _id: { type: String, required: true },
   Voucher_ID: { type: String, required: true },
   TotalDiscount: { type: Number, required: true },
+  CusID: { type: String, required: true },
   Date: { type: Date, required: true },
 });
 
