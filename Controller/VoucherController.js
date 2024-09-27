@@ -306,11 +306,13 @@ const updateVoucher = async (req, res) => {
 const deleteVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const voucher = await VoucherDB.findByIdAndDelete(_id);
+    const voucher = await VoucherDB.findById(_id);
 
     if (!voucher) {
       return res.status(404).json({ message: " VoucherDB not found" });
     }
+    voucher.States = "disable";
+    await voucher.save();
     res.json({ message: " VoucherDB deleted successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
