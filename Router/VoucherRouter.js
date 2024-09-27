@@ -27,6 +27,6 @@ router.get(
 
 router.put("/updateVoucher/:_id", updateVoucher);
 router.post("/updateState/:_id", updateState);
-router.get("/deleteVoucher/:_id", deleteVoucher);
+router.get("/DeleteVoucher/:_id", deleteVoucher);
 
 module.exports = router;
