@@ -23,7 +23,7 @@ const createVoucherbyAdmin = async (req, res) => {
         .status(400)
         .json({ message: "ExpiredTime phải sau ReleaseTime" });
     }
-    if (ReleaseTime < new Date()) {
+    if (ReleaseTime < new Date.now()) {
       return res
         .status(400)
         .json({ message: "ReleaseTime phải sau thời gian hiện tại" });
