@@ -404,6 +404,33 @@ const updateState = async (req, res) => {
   }
 };
 
+const updateCondition = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const conditionNew = await ConditionDB.findById(_id);
+    const { MinValue, MaxValue, PercentDiscount } = req.body;
+    if (PercentDiscount < 0 || PercentDiscount > 100) {
+      return res
+        .status(400)
+        .json({ message: "PercentDiscount phải từ 0 đến 100" });
+    }
+    if (MinValue < 0 || MaxValue < 0) {
+      return res
+        .status(400)
+        .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
+    }
+    conditionNew.MinValue = MinValue;
+    conditionNew.MaxValue = MaxValue;
+    conditionNew.PercentDiscount = PercentDiscount;
+    await condition.save();
+    res.json({
+      message: "Condition updated successfully",
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createVoucherbyAdmin,
   createVoucherbyPartner,
@@ -413,4 +440,5 @@ module.exports = {
   getvoucherManagerbyPartner,
   DetailVoucher,
   updateState,
+  updateCondition,
 };

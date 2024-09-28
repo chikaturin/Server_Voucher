@@ -9,6 +9,7 @@ const {
   getvoucherManagerbyPartner,
   DetailVoucher,
   updateState,
+  updateCondition,
 } = require("../Controller/VoucherController.js");
 
 const checktokken = require("../Middleware/check.js").checktokken;
@@ -28,5 +29,7 @@ router.get(
 router.put("/updateVoucher/:_id", updateVoucher);
 router.post("/updateState/:_id", updateState);
 router.get("/deleteVoucher/:_id", deleteVoucher);
+
+router.post("/updateCondition/:_id", updateCondition);
 
 module.exports = router;
