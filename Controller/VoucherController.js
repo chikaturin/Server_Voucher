@@ -408,7 +408,7 @@ const updateCondition = async (req, res) => {
   try {
     const { _id } = req.params;
     const conditionNew = await ConditionDB.findById(_id);
-    
+
     if (!conditionNew) {
       return res.status(404).json({ message: "Condition not found" });
     }
@@ -425,6 +425,9 @@ const updateCondition = async (req, res) => {
         .status(400)
         .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
     }
+    if (!MinValue || !MaxValue || PercentDiscount) {
+      return res.status(400).json({ message: "Missing information" });
+    }
 
     conditionNew.MinValue = MinValue;
     conditionNew.MaxValue = MaxValue;
@@ -439,7 +442,6 @@ const updateCondition = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 
 module.exports = {
   createVoucherbyAdmin,
