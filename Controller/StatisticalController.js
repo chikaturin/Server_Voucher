@@ -3,8 +3,7 @@ const CounterHistoryDB = require("../Schema/schema").counterHistory;
 
 const createHistory = async (req, res) => {
   try {
-    const { Voucher_ID, Partner_ID, TotalDiscount, AmountUsed, Date } =
-      req.body;
+    const { Voucher_ID, CusID, TotalDiscount, AmountUsed, Date } = req.body;
 
     let historyCounter = await CounterHistoryDB.findOneAndUpdate(
       { _id: "Statistical" },
@@ -16,7 +15,7 @@ const createHistory = async (req, res) => {
     const history = new HistoryDB({
       _id,
       Voucher_ID,
-      Partner_ID,
+      CusID,
       TotalDiscount,
       AmountUsed,
       Date,
