@@ -46,8 +46,35 @@ const Staitstical_PartnerService = async (req, res) => {
   res.json(history);
 };
 
+const StatisticalSort = async (req, res) => {
+  try {
+    const { month, year } = req.body;
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const history = await HistoryDB.find({
+      Date: {
+        $gte: startDate,
+        $lt: endDate,
+      },
+    });
+
+    if (!history || history.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy lịch sử cho tháng và năm này" });
+    }
+
+    res.status(200).json(history);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createHistory,
   Statistical_Voucher,
   Staitstical_PartnerService,
+  StatisticalSort,
 };

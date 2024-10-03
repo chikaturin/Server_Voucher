@@ -41,6 +41,7 @@ const createVoucherbyAdmin = async (req, res) => {
     const idVoucher = `VC${counterVoucher.seq}`;
 
     let min = Conditions[0].MinValue;
+
     for (const condition of Conditions) {
       const { MinValue, MaxValue, PercentDiscount } = condition;
 

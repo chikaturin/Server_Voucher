@@ -5,6 +5,7 @@ const {
   createHistory,
   Statistical_Voucher,
   Staitstical_PartnerService,
+  StatisticalSort,
 } = require("../Controller/StatisticalController.js");
 
 const checktokken = require("../Middleware/check.js").checktokken;
@@ -16,5 +17,6 @@ router.get(
   checktokken,
   Staitstical_PartnerService
 );
+router.post("/StatisticalSort", StatisticalSort);
 
 module.exports = router;
