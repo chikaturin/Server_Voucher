@@ -11,7 +11,7 @@ const CreateReport = async (req, res) => {
       { new: true, upsert: true }
     );
     const _id = `RPT${counter.seq}`;
-    const StateReport = "Solve";
+    const StateReport = "UnSolve";
     const reportVoucher = new ReportVoucher({
       _id,
       Content,
@@ -52,8 +52,26 @@ const getReport = async (req, res) => {
   }
 };
 
+const SolveReport = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const report = await ReportVoucher.findByIdAndUpdate(
+      { _id },
+      { StateReport: "Solve" },
+      { new: true }
+    );
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    res.status(200).json({ message: "Solve Report successfully" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   CreateReport,
   deleteReportVoucher,
   getReport,
+  SolveReport,
 };
