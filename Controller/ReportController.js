@@ -38,7 +38,20 @@ const deleteReportVoucher = async (req, res) => {
   }
 };
 
+const getReport = async (req, res) => {
+  try {
+    const report = await ReportVoucher.find();
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    res.json(report);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   CreateReport,
   deleteReportVoucher,
+  getReport,
 };
