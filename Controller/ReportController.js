@@ -11,12 +11,14 @@ const CreateReport = async (req, res) => {
       { new: true, upsert: true }
     );
     const _id = `RPT${counter.seq}`;
+    const StateReport = "Solve";
     const reportVoucher = new ReportVoucher({
       _id,
       Content,
       DayReport,
       Voucher_ID,
       ReportedBy,
+      StateReport,
     });
     await reportVoucher.save();
     res.status(201).json({ message: "Create ReportVoucher successfully" });

@@ -66,6 +66,7 @@ const ReportVoucherSchema = new mongoose.Schema({
   DayReport: { type: Date, required: true },
   Voucher_ID: { type: String, required: true },
   ReportedBy: { type: String, required: true },
+  StateReport: { type: String, required: true },
 });
 
 // Models
