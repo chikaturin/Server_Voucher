@@ -3,12 +3,12 @@ const router = express.Router();
 
 const {
   CalculateVoucher,
-  UsedVoucher,
-  UseVoucher,
+  ApplyVoucher,
+  getVoucherByCus,
 } = require("../Controller/PayController.js");
 
 router.post("/CalculateVoucher", CalculateVoucher);
-router.post("/UsedVoucher/:_id", UsedVoucher);
-router.post("/UseVoucher", UseVoucher);
+router.post("/ApplyVoucher/:_id", ApplyVoucher);
+router.post("/getVoucherByCus", getVoucherByCus);
 
 module.exports = router;

@@ -50,7 +50,7 @@ const CalculateVoucher = async (req, res) => {
   }
 };
 
-const UsedVoucher = async (req, res) => {
+const ApplyVoucher = async (req, res) => {
   try {
     const { _id, CusID } = req.body;
     const voucher = await Voucher.findByIdAndUpdate(
@@ -85,7 +85,7 @@ const UsedVoucher = async (req, res) => {
   }
 };
 
-const UseVoucher = async (req, res) => {
+const getVoucherByCus = async (req, res) => {
   try {
     const { Service_ID, Partner_ID, Price } = req.body;
     const havevoucher = await HaveVoucher.find({ Service_ID });
@@ -125,4 +125,4 @@ const UseVoucher = async (req, res) => {
   }
 };
 
-module.exports = { CalculateVoucher, UsedVoucher, UseVoucher };
+module.exports = { CalculateVoucher, ApplyVoucher, getVoucherByCus };
