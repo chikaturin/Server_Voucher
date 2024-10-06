@@ -391,8 +391,12 @@ const updateState = async (req, res) => {
         .status(404)
         .json({ message: "VoucherDB not found to update state" });
     }
-    if (voucher.RemainQuantity == 0) {
+    if (voucher.RemainQuantity == 0 || voucher.ReleaseTime < new Date()) {
       voucher.States = "disable";
+      return res.status(400).json({
+        message:
+          "You cann't update state, when RemainQuantity=0 or ReleaseTime<now",
+      });
     } else {
       voucher.States = voucher.States === "enable" ? "disable" : "enable";
     }
