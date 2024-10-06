@@ -14,7 +14,7 @@ const {
 
 const checktokken = require("../Middleware/check.js").checktokken;
 
-router.post("/createVoucherByAdmin");
+router.post("/createVoucherByAdmin", createVoucherbyAdmin);
 router.post("/createVoucherByPartner", checktokken, createVoucherbyPartner);
 
 router.get("/getVoucherByAdmin", getVoucherByAdmin);
