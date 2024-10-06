@@ -44,7 +44,7 @@ const CalculateVoucher = async (req, res) => {
       priceDiscount = selectedCondition.MaxValue;
     }
 
-    res.status(200).json({ priceDiscount });
+    res.status(200).json(priceDiscount);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -52,7 +52,8 @@ const CalculateVoucher = async (req, res) => {
 
 const ApplyVoucher = async (req, res) => {
   try {
-    const { _id, CusID } = req.body;
+    const { _id } = req.params;
+    const { CusID, TotalDiscount } = req.body;
     const voucher = await Voucher.findByIdAndUpdate(
       _id,
       {
@@ -64,8 +65,12 @@ const ApplyVoucher = async (req, res) => {
       return res.status(404).json({ message: "Voucher not found" });
     }
 
+    if (voucher.RemainQuantity < 1) {
+      await Voucher.findByIdAndUpdate(_id, { $set: { States: "disable" } });
+    }
+
     const counterID = await CounterHistory.findOneAndUpdate(
-      { _id: "counterHistory" },
+      { _id: "Statistical" },
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
@@ -75,10 +80,11 @@ const ApplyVoucher = async (req, res) => {
       _id: _idhis,
       Voucher_ID: _id,
       CusID,
-      TotalDiscount: Price,
+      TotalDiscount,
       Date: new Date(),
     });
     await history.save();
+
     res.status(200).json(history);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -99,6 +105,7 @@ const getVoucherByCus = async (req, res) => {
       {
         $match: {
           _id: { $in: voucherIDs },
+          States: "enable",
           $or: [{ Partner_ID }, { Partner_ID: null }],
           MinCondition: { $lte: Price },
         },

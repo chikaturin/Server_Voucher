@@ -47,7 +47,7 @@ const VoucherSchema = new mongoose.Schema({
   RemainQuantity: { type: Number, required: true },
   States: { type: String, required: true },
   Partner_ID: { type: String },
-  AmountUsed: { type: String },
+  AmountUsed: { type: Number, required: true },
   MinCondition: { type: Number },
 });
 
