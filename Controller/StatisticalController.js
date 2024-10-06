@@ -35,6 +35,32 @@ const Statistical_Voucher = async (req, res) => {
   res.json(history);
 };
 
+const Statistical_VoucherFindPartner_Service = async (req, res) => {
+  try {
+    const Statistical = await HistoryDB.aggregate([
+      {
+        $lookup: {
+          from: "vouchers",
+          localField: "Voucher_ID",
+          foreignField: "_id",
+          as: "vouchers",
+        },
+      },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "Voucher_ID",
+          foreignField: "Voucher_ID",
+          as: "haveVouchers",
+        },
+      },
+    ]);
+    res.json(Statistical);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const Staitstical_PartnerService = async (req, res) => {
   const { Partner_ID } = req.decoded._id;
   const history = await HistoryDB.find({ Partner_ID });
@@ -75,4 +101,5 @@ module.exports = {
   Statistical_Voucher,
   Staitstical_PartnerService,
   StatisticalSort,
+  Statistical_VoucherFindPartner_Service,
 };
