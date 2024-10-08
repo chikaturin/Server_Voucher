@@ -24,5 +24,8 @@ router.get("/getService", getService);
 router.get("/getPartner", getPartner);
 router.post("/createService", createService);
 router.post("/createPartner", createPartner);
+router.get("/user", CheckToken, (req, res) => {
+  res.json(req.decoded);
+});
 
 module.exports = router;

@@ -36,7 +36,16 @@ const ConditionSchema = new mongoose.Schema({
   Voucher_ID: { type: String, required: true },
 });
 
-// Schema for general vouchers applicable across the entire website of a partner
+const PersonalSchema = new mongoose.Schema({
+  CusID: { type: String, required: true },
+  Point: { type: Number, required: true },
+});
+
+const VoucherCusSchema = new mongoose.Schema({
+  Voucher_ID: { type: String },
+  CusID: { type: String, required: true },
+});
+
 const VoucherSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   Name: { type: String, required: true },
@@ -78,6 +87,8 @@ const Service = mongoose.model("Service", ServiceSchema);
 const Partner = mongoose.model("Partner", PartnerSchema);
 const Condition = mongoose.model("Condition", ConditionSchema);
 const HaveVoucher = mongoose.model("HaveVoucher", HaveVoucherSchema);
+const Personal = mongoose.model("Personal", PersonalSchema);
+const VoucherCus = mongoose.model("VoucherCus", VoucherCusSchema);
 
 const counterVoucher = mongoose.model("CounterVoucher", counterSchema);
 const counterHistory = mongoose.model("CounterHistory", counterSchema);
@@ -104,4 +115,6 @@ module.exports = {
   Partner,
   Condition,
   HaveVoucher,
+  Personal,
+  VoucherCus,
 };
