@@ -7,6 +7,7 @@ const {
   Staitstical_PartnerService,
   StatisticalSort,
   Statistical_VoucherFindPartner_Service,
+  HistoryCus,
 } = require("../Controller/StatisticalController.js");
 
 const checktokken = require("../Middleware/check.js").checktokken;
@@ -24,5 +25,7 @@ router.get(
   "/Statistical_VoucherFindPartner_Service",
   Statistical_VoucherFindPartner_Service
 );
+
+router.get("/HistoryCus", checktokken, HistoryCus);
 
 module.exports = router;

@@ -35,6 +35,15 @@ const Statistical_Voucher = async (req, res) => {
   res.json(history);
 };
 
+const HistoryCus = async (req, res) => {
+  const { CusID } = req.decoded._id;
+  const history = await HistoryDB.find({ CusID });
+  if (!history) {
+    return res.status(404).json({ message: "History not found" });
+  }
+  res.json(history);
+};
+
 const Statistical_VoucherFindPartner_Service = async (req, res) => {
   try {
     const Statistical = await HistoryDB.aggregate([
@@ -102,4 +111,5 @@ module.exports = {
   Staitstical_PartnerService,
   StatisticalSort,
   Statistical_VoucherFindPartner_Service,
+  HistoryCus,
 };
