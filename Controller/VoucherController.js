@@ -15,6 +15,7 @@ const createVoucherbyAdmin = async (req, res) => {
       Image,
       RemainQuantity,
       Conditions,
+      PercentDiscount,
       HaveVouchers,
     } = req.body;
     const AmountUsed = 0;
@@ -42,8 +43,14 @@ const createVoucherbyAdmin = async (req, res) => {
 
     let min = Conditions[0].MinValue;
 
+    if (PercentDiscount < 0 || PercentDiscount > 100) {
+      return res
+        .status(400)
+        .json({ message: "PercentDiscount phải từ 0 đến 100" });
+    }
+
     for (const condition of Conditions) {
-      const { MinValue, MaxValue, PercentDiscount } = condition;
+      const { MinValue, MaxValue } = condition;
 
       const counterCondition = await CounterCondition.findOneAndUpdate(
         { _id: "GenaralCondition" },
@@ -52,17 +59,21 @@ const createVoucherbyAdmin = async (req, res) => {
       );
       const idCondition = `CD${counterCondition.seq}`;
 
-      if (PercentDiscount < 0 || PercentDiscount > 100) {
-        return res
-          .status(400)
-          .json({ message: "PercentDiscount phải từ 0 đến 100" });
-      }
       if (MinValue < 0 || MaxValue < 0) {
         return res
           .status(400)
           .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
       }
 
+      if (
+        MaxValue > MinValue &&
+        MaxValue >= (MinValue * PercentDiscount) / 100
+      ) {
+        return res.status(400).json({
+          message:
+            "MaxValue phải be hơn MinValue và MaxValue phải bé hơn MinValue*PercentDiscount/100",
+        });
+      }
       if (min > MinValue) {
         min = MinValue;
       }
@@ -71,7 +82,6 @@ const createVoucherbyAdmin = async (req, res) => {
         Voucher_ID: idVoucher,
         MinValue,
         MaxValue,
-        PercentDiscount,
       });
       await newCondition.save();
     }
@@ -86,6 +96,7 @@ const createVoucherbyAdmin = async (req, res) => {
       RemainQuantity,
       States,
       AmountUsed,
+      PercentDiscount,
       MinCondition: min,
     });
     await voucher.save();
@@ -125,6 +136,7 @@ const createVoucherbyPartner = async (req, res) => {
       Description,
       Image,
       RemainQuantity,
+      PercentDiscount,
       Conditions,
       HaveVouchers,
     } = req.body;
@@ -145,6 +157,12 @@ const createVoucherbyPartner = async (req, res) => {
       States = "enable";
     }
 
+    if (PercentDiscount < 0 || PercentDiscount > 100) {
+      return res
+        .status(400)
+        .json({ message: "PercentDiscount phải từ 0 đến 100" });
+    }
+
     const counterVoucher = await CounterVoucher.findOneAndUpdate(
       { _id: "GenaralVoucher" },
       { $inc: { seq: 1 } },
@@ -159,7 +177,7 @@ const createVoucherbyPartner = async (req, res) => {
     let min = Conditions[0].MinValue;
 
     for (const condition of Conditions) {
-      const { MinValue, MaxValue, PercentDiscount } = condition;
+      const { MinValue, MaxValue } = condition;
 
       const counterCondition = await CounterCondition.findOneAndUpdate(
         { _id: "GenaralCondition" },
@@ -168,11 +186,6 @@ const createVoucherbyPartner = async (req, res) => {
       );
       const idCondition = `CD${counterCondition.seq}`;
 
-      if (PercentDiscount < 0 || PercentDiscount > 100) {
-        return res
-          .status(400)
-          .json({ message: "PercentDiscount phải từ 0 đến 100" });
-      }
       if (MinValue < 0 || MaxValue < 0) {
         return res
           .status(400)
@@ -188,7 +201,6 @@ const createVoucherbyPartner = async (req, res) => {
         Voucher_ID: idVoucher,
         MinValue,
         MaxValue,
-        PercentDiscount,
       });
       await newCondition.save();
     }
@@ -204,6 +216,7 @@ const createVoucherbyPartner = async (req, res) => {
       RemainQuantity,
       States,
       AmountUsed,
+      PercentDiscount,
       MinCondition: min,
     });
     await voucher.save();

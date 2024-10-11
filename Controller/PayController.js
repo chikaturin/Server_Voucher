@@ -5,6 +5,7 @@ const Condition = require("../Schema/schema").Condition;
 const CounterHistory = require("../Schema/schema").counterHistory;
 const PersonalDB = require("../Schema/schema").Personal;
 const VoucherCusDB = require("../Schema/schema").VoucherCus;
+const NoteDB = require("../Schema/schema").Note;
 
 const CalculateVoucher = async (req, res) => {
   try {
@@ -357,6 +358,24 @@ const getVoucherByCus = async (req, res) => {
     }
 
     res.status(200).json(uniqueVouchers);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const RequireVoucher = async (req, res) => {
+  try {
+    const { Service_ID, Partner_ID, Price, CusID, OrderID } = req.body;
+
+    const Note = new NoteDB({
+      Service_ID,
+      Partner_ID,
+      Price,
+      CusID,
+      OrderID,
+    });
+    await Note.save();
+    res.status(200).json({ message: "Connect successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

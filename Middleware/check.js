@@ -19,15 +19,21 @@ const checktokken = (req, res, next) => {
   });
 };
 
-const checkAPIkey = async (req, res, next) => {
-  const apiKey = req.headers["x-api-key"];
-  const service = await Account.findOne({ Api_key: apiKey });
+const ReadToken = (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-  if (!apiKey) {
-    return res.status(401).json({ message: "API key is required" });
+  if (!token) {
+    return res.status(400).json({ message: "Token is required" });
   }
-  req.service = service;
-  next();
+
+  const decoded = jwt.decode(token);
+
+  if (!decoded) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  res.json(decoded);
 };
 
-module.exports = { checktokken, checkAPIkey };
+module.exports = { checktokken, ReadToken };

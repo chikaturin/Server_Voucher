@@ -32,7 +32,6 @@ const ConditionSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   MaxValue: { type: Number, required: true },
   MinValue: { type: Number, required: true },
-  PercentDiscount: { type: Number, required: true },
   Voucher_ID: { type: String, required: true },
 });
 
@@ -56,6 +55,7 @@ const VoucherSchema = new mongoose.Schema({
   RemainQuantity: { type: Number, required: true },
   States: { type: String, required: true },
   Partner_ID: { type: String },
+  PercentDiscount: { type: Number, required: true },
   AmountUsed: { type: Number, required: true },
   MinCondition: { type: Number },
 });
@@ -78,6 +78,14 @@ const ReportVoucherSchema = new mongoose.Schema({
   StateReport: { type: String, required: true },
 });
 
+const NoteSchema = new mongoose.Schema({
+  Service_ID: { type: String, required: true },
+  Partner_ID: { type: Date, required: true },
+  Price: { type: String, required: true },
+  CusID: { type: String, required: true },
+  OrderID: { type: String, required: true },
+});
+
 // Models
 const AccountAdmin = mongoose.model("Admin", AccountAdminSchema);
 const Voucher = mongoose.model("Voucher", VoucherSchema);
@@ -89,6 +97,7 @@ const Condition = mongoose.model("Condition", ConditionSchema);
 const HaveVoucher = mongoose.model("HaveVoucher", HaveVoucherSchema);
 const Personal = mongoose.model("Personal", PersonalSchema);
 const VoucherCus = mongoose.model("VoucherCus", VoucherCusSchema);
+const Note = mongoose.model("Note", NoteSchema);
 
 const counterVoucher = mongoose.model("CounterVoucher", counterSchema);
 const counterHistory = mongoose.model("CounterHistory", counterSchema);
@@ -117,4 +126,5 @@ module.exports = {
   HaveVoucher,
   Personal,
   VoucherCus,
+  Note,
 };
