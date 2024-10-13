@@ -12,7 +12,7 @@ const {
   updateCondition,
 } = require("../Controller/VoucherController.js");
 
-const checktokken = require("../Middleware/check.js").checktokken;
+const { checktokken, ReadToken } = require("../Middleware/check.js");
 
 router.post("/createVoucherByAdmin", createVoucherbyAdmin);
 router.post("/createVoucherByPartner", checktokken, createVoucherbyPartner);

@@ -345,6 +345,10 @@ const getVoucherByCus = async (req, res) => {
       },
     ]);
 
+    if (!otherVouchers) {
+      return res.status(404).json({ message: "No applicable voucher found" });
+    }
+
     vouchers.push(...otherVouchers);
 
     const uniqueVouchers = Array.from(
