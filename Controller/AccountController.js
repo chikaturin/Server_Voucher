@@ -34,21 +34,18 @@ const signIn = async (req, res) => {
     const account = await Account.findOne({ Name });
 
     if (!account) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Username bị sai" });
     }
 
-    // Check password with bcrypt
     const isMatch = await bcrypt.compare(PassWord, account.PassWord);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Password bị sai" });
     }
 
-    // Ensure account._id is defined before creating token
     if (!account._id) {
       return res.status(500).json({ message: "Account ID is missing" });
     }
 
-    // Create access token
     const AccessTokken = jwt.sign(
       {
         _id: account._id,
