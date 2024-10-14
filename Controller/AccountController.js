@@ -12,10 +12,8 @@ const register = async (req, res) => {
     const _id = Name + "1";
     const Api_key = crypto.randomBytes(16).toString("hex");
 
-    // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(PassWord, 10);
 
-    // Tạo đối tượng Account
     const account = new Account({
       _id,
       Name,
@@ -55,6 +53,7 @@ const signIn = async (req, res) => {
       {
         _id: account._id,
         Name: account.Name,
+        role: "Admin",
       },
       process.env.ACCESS_TOKEN_SECRET
     );
@@ -62,8 +61,6 @@ const signIn = async (req, res) => {
     res.json({
       AccessTokken,
       message: "Access Token created successfully",
-      Name: Name,
-      Pass: PassWord,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
