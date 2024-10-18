@@ -72,7 +72,7 @@ const CheckPoint = async (req, res) => {
 
 const CheckVoucher = async (req, res) => {
   try {
-    const CusID = req.decoded?._id;
+    const CusID = req.decoded?.id;
     const { Service_ID } = req.body;
 
     const havevoucher = await HaveVoucher.find({ Service_ID });
