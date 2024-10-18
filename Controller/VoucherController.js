@@ -123,6 +123,7 @@ const createVoucherbyAdmin = async (req, res) => {
 const createVoucherbyPartner = async (req, res) => {
   try {
     const {
+      _id,
       Name,
       ReleaseTime,
       ExpiredTime,
@@ -156,13 +157,7 @@ const createVoucherbyPartner = async (req, res) => {
         .json({ message: "PercentDiscount phải từ 0 đến 100" });
     }
 
-    const counterVoucher = await CounterVoucher.findOneAndUpdate(
-      { _id: "GenaralVoucher" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-    const idVoucher = `VC${counterVoucher.seq}`;
-    const partner_ID = req.decoded?._id;
+    const partner_ID = req.decoded?.partnerId;
     if (!partner_ID) {
       return res.status(400).json({ message: "Không tìm thấy partner_ID" });
     }
@@ -191,7 +186,7 @@ const createVoucherbyPartner = async (req, res) => {
 
       const newCondition = new ConditionDB({
         _id: idCondition,
-        Voucher_ID: idVoucher,
+        Voucher_ID: _id,
         MinValue,
         MaxValue,
       });
@@ -199,7 +194,7 @@ const createVoucherbyPartner = async (req, res) => {
     }
 
     const voucher = new VoucherDB({
-      _id: idVoucher,
+      _id,
       Name,
       Partner_ID: partner_ID,
       ReleaseTime,
@@ -224,7 +219,7 @@ const createVoucherbyPartner = async (req, res) => {
       const idHaveVoucher = `HV${counterHaveVoucher.seq}`;
       const newHaveVoucher = new HaveVoucherDB({
         _id: idHaveVoucher,
-        Voucher_ID: idVoucher,
+        Voucher_ID: _id,
         Service_ID,
       });
       await newHaveVoucher.save();
@@ -361,7 +356,7 @@ const getVoucherByAdmin = async (req, res) => {
 //----------------------------------------------get voucher by partner ở trên web của mình
 const getvoucherManagerbyPartner = async (req, res) => {
   try {
-    const Partner_ID = req.decoded._id;
+    const Partner_ID = req.decoded.partnerId;
     const voucher = await VoucherDB.aggregate([
       { $match: { Partner_ID: Partner_ID } },
       {

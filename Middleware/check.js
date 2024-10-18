@@ -7,7 +7,7 @@ const checktokken = (req, res, next) => {
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "Token is required" });
+    return res.status(400).json({ message: "Token is required" });
   }
 
   const decoded = jwt.decode(token);
@@ -16,15 +16,9 @@ const checktokken = (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err) => {
-    if (err) {
-      return res.status(403).json({ message: "Invalid token" });
-    }
+  req.decoded = decoded;
 
-    req.decoded = decoded;
-
-    next();
-  });
+  next();
 };
 
 const ReadToken = (req, res) => {
@@ -44,9 +38,4 @@ const ReadToken = (req, res) => {
   res.json(decoded);
 };
 
-const CheckRole = (req, res, next) => {
-  req.locals.user; // để truy cập thông tin người dùng nếu xác thực, nếu người dùng không hợp lệ giá trị sẽ là null
-  next();
-};
-
-module.exports = { checktokken, ReadToken, CheckRole };
+module.exports = { checktokken, ReadToken };
