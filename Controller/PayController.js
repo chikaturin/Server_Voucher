@@ -55,7 +55,7 @@ const CalculateVoucher = async (req, res) => {
 
 const CheckPoint = async (req, res) => {
   try {
-    const CusID = req.decoded?._id;
+    const CusID = req.decoded?.id;
     const personal = await PersonalDB.findOne({ CusID });
     if (!personal) {
       const personalcreate = new PersonalDB({
@@ -146,7 +146,7 @@ const CheckVoucher = async (req, res) => {
 
 const ReceiveVoucher = async (req, res) => {
   try {
-    const CusID = req.decoded?._id;
+    const CusID = req.decoded?.id;
     const { Service_ID } = req.body;
 
     let havevouchers = await HaveVoucher.find({ Service_ID });
