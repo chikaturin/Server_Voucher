@@ -42,7 +42,7 @@ const createVoucherbyAdmin = async (req, res) => {
         .status(400)
         .json({ message: "PercentDiscount phải từ 0 đến 100" });
     }
-
+    let newCondition;
     for (const condition of Conditions) {
       const { MinValue, MaxValue } = condition;
 
@@ -70,13 +70,12 @@ const createVoucherbyAdmin = async (req, res) => {
       if (min > MinValue) {
         min = MinValue;
       }
-      const newCondition = new ConditionDB({
+      newCondition = new ConditionDB({
         _id: idCondition,
         Voucher_ID: _id,
         MinValue,
         MaxValue,
       });
-      await newCondition.save();
     }
 
     const voucher = new VoucherDB({
@@ -92,7 +91,9 @@ const createVoucherbyAdmin = async (req, res) => {
       PercentDiscount,
       MinCondition: min,
     });
+
     await voucher.save();
+    await newCondition.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -104,7 +105,7 @@ const createVoucherbyAdmin = async (req, res) => {
       const idHaveVoucher = `HV${counterHaveVoucher.seq}`;
       const newHaveVoucher = new HaveVoucherDB({
         _id: idHaveVoucher,
-        Voucher_ID: idVoucher,
+        Voucher_ID: _id,
         Service_ID,
       });
       await newHaveVoucher.save();
@@ -163,6 +164,7 @@ const createVoucherbyPartner = async (req, res) => {
     }
 
     let min = Conditions[0].MinValue;
+    let newCondition;
 
     for (const condition of Conditions) {
       const { MinValue, MaxValue } = condition;
@@ -184,13 +186,12 @@ const createVoucherbyPartner = async (req, res) => {
         min = MinValue;
       }
 
-      const newCondition = new ConditionDB({
+      newCondition = new ConditionDB({
         _id: idCondition,
         Voucher_ID: _id,
         MinValue,
         MaxValue,
       });
-      await newCondition.save();
     }
 
     const voucher = new VoucherDB({
@@ -208,6 +209,7 @@ const createVoucherbyPartner = async (req, res) => {
       MinCondition: min,
     });
     await voucher.save();
+    await newCondition.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -409,7 +411,7 @@ const updateState = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
+//----------------------------------------updateContdition
 const updateCondition = async (req, res) => {
   try {
     const { _id } = req.params;
