@@ -389,6 +389,16 @@ const RequireVoucher = async (req, res) => {
   }
 };
 
+const GetNote = async (req, res) => {
+  try {
+    const { OrderID } = req.params;
+    const notes = await NoteDB.findOne({ OrderID });
+    res.status(200).json(notes);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   CalculateVoucher,
   ApplyVoucher,
@@ -397,4 +407,5 @@ module.exports = {
   ReceiveVoucher,
   CheckPoint,
   RequireVoucher,
+  GetNote,
 };
