@@ -25,7 +25,7 @@ const HaveVoucherSchema = new mongoose.Schema({
 
 const PartnerSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  Name: { type: String, required: true },
+  Mail: { type: String, required: true },
 });
 
 const ConditionSchema = new mongoose.Schema({

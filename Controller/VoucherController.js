@@ -1,5 +1,5 @@
 const VoucherDB = require("../Schema/schema").Voucher;
-const CounterVoucher = require("../Schema/schema").counterVoucher;
+const PartnerDB = require("../Schema/schema").Partner;
 const ConditionDB = require("../Schema/schema").Condition;
 const CounterCondition = require("../Schema/schema").counterCondition;
 const HaveVoucherDB = require("../Schema/schema").HaveVoucher;
@@ -163,6 +163,11 @@ const createVoucherbyPartner = async (req, res) => {
       return res.status(400).json({ message: "Không tìm thấy partner_ID" });
     }
 
+    const partner = new PartnerDB({
+      _id: partner_ID,
+      Mail: req.decoded?.email,
+    });
+
     let min = Conditions[0].MinValue;
     let newCondition;
 
@@ -210,6 +215,7 @@ const createVoucherbyPartner = async (req, res) => {
     });
     await voucher.save();
     await newCondition.save();
+    await partner.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
