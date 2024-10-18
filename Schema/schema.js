@@ -84,6 +84,7 @@ const NoteSchema = new mongoose.Schema({
   Price: { type: String, required: true },
   CusID: { type: String, required: true },
   OrderID: { type: String, required: true },
+  StateNote: { type: String, required: true },
 });
 
 // Models

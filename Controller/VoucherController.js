@@ -8,6 +8,7 @@ const CounterHaveVoucher = require("../Schema/schema").counterHaveVoucher;
 const createVoucherbyAdmin = async (req, res) => {
   try {
     const {
+      _id,
       Name,
       ReleaseTime,
       ExpiredTime,
@@ -33,13 +34,6 @@ const createVoucherbyAdmin = async (req, res) => {
     if (new Date(ReleaseTime).getTime() == Date.now()) {
       States = "enable";
     }
-
-    const counterVoucher = await CounterVoucher.findOneAndUpdate(
-      { _id: "GenaralVoucher" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-    const idVoucher = `VC${counterVoucher.seq}`;
 
     let min = Conditions[0].MinValue;
 
@@ -70,8 +64,7 @@ const createVoucherbyAdmin = async (req, res) => {
         MaxValue >= (MinValue * PercentDiscount) / 100
       ) {
         return res.status(400).json({
-          message:
-            "MaxValue phải be hơn MinValue và MaxValue phải bé hơn MinValue*PercentDiscount/100",
+          message: `Maxvalue phải bé hơn ${(MinValue * PercentDiscount) / 100}`,
         });
       }
       if (min > MinValue) {
@@ -79,7 +72,7 @@ const createVoucherbyAdmin = async (req, res) => {
       }
       const newCondition = new ConditionDB({
         _id: idCondition,
-        Voucher_ID: idVoucher,
+        Voucher_ID: _id,
         MinValue,
         MaxValue,
       });
@@ -87,7 +80,7 @@ const createVoucherbyAdmin = async (req, res) => {
     }
 
     const voucher = new VoucherDB({
-      _id: idVoucher,
+      _id,
       Name,
       ReleaseTime,
       ExpiredTime,

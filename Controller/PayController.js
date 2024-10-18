@@ -371,13 +371,17 @@ const RequireVoucher = async (req, res) => {
   try {
     const { Service_ID, Partner_ID, Price, CusID, OrderID } = req.body;
 
+    const StateNote = "Waiting";
+
     const Note = new NoteDB({
       Service_ID,
       Partner_ID,
       Price,
       CusID,
       OrderID,
+      StateNote,
     });
+
     await Note.save();
     res.status(200).json({ message: "Connect successfully" });
   } catch (error) {
@@ -392,4 +396,5 @@ module.exports = {
   CheckVoucher,
   ReceiveVoucher,
   CheckPoint,
+  RequireVoucher,
 };

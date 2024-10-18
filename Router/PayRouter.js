@@ -8,6 +8,7 @@ const {
   ReceiveVoucher,
   CheckVoucher,
   CheckPoint,
+  RequireVoucher,
 } = require("../Controller/PayController.js");
 
 const CheckToken = require("../Middleware/check.js").checktokken;
@@ -20,5 +21,7 @@ router.post("/ReceiveVoucher", CheckToken, ReceiveVoucher);
 router.post("/CheckVoucher", CheckToken, CheckVoucher);
 
 router.get("/CheckPoint", CheckToken, CheckPoint);
+
+router.post("/RequireVoucher", RequireVoucher);
 
 module.exports = router;
