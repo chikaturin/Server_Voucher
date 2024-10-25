@@ -1,5 +1,6 @@
 const HistoryDB = require("../Schema/schema").History;
 const CounterHistoryDB = require("../Schema/schema").counterHistory;
+const redisClient = require("../Middleware/redisClient");
 
 const createHistory = async (req, res) => {
   try {
@@ -28,10 +29,16 @@ const createHistory = async (req, res) => {
 };
 
 const Statistical_Voucher = async (req, res) => {
+  const cacheKey = "Statistical_Voucher";
+  const cacheStatistical = await redisClient.get(cacheKey);
+  if (cache) {
+    return res.status(200).json(JSON.parse(cacheStatistical));
+  }
   const history = await HistoryDB.find();
   if (!history) {
     return res.status(404).json({ message: "History not found" });
   }
+  await redisClient.set(cacheKey, JSON.stringify(history));
   res.json(history);
 };
 
@@ -46,6 +53,11 @@ const HistoryCus = async (req, res) => {
 
 const Statistical_VoucherFindPartner_Service = async (req, res) => {
   try {
+    const cacheKey = "Statistical_VoucherFindPartner_Service";
+    const cacheStatistical = await redisClient.get(cacheKey);
+    if (cacheStatistical) {
+      return res.status(200).json(JSON.parse(cacheStatistical));
+    }
     const Statistical = await HistoryDB.aggregate([
       {
         $lookup: {
@@ -64,18 +76,25 @@ const Statistical_VoucherFindPartner_Service = async (req, res) => {
         },
       },
     ]);
+    await redisClient.set(cacheKey, JSON.stringify(Statistical));
     res.json(Statistical);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-const Staitstical_PartnerService = async (req, res) => {
+const Statistical_PartnerService = async (req, res) => {
   const { Partner_ID } = req.decoded._id;
+  const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
+  if (cacheStatistical) {
+    return res.status(200).json(JSON.parse(cacheStatistical));
+  }
+
   const history = await HistoryDB.find({ Partner_ID });
   if (!history) {
     return res.status(404).json({ message: "History not found" });
   }
+  await redisClient.set(`Statistical:${Partner_ID}`, JSON.stringify(history));
   res.json(history);
 };
 
@@ -108,7 +127,7 @@ const StatisticalSort = async (req, res) => {
 module.exports = {
   createHistory,
   Statistical_Voucher,
-  Staitstical_PartnerService,
+  Statistical_PartnerService,
   StatisticalSort,
   Statistical_VoucherFindPartner_Service,
   HistoryCus,

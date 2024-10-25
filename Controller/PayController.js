@@ -6,6 +6,55 @@ const CounterHistory = require("../Schema/schema").counterHistory;
 const PersonalDB = require("../Schema/schema").Personal;
 const VoucherCusDB = require("../Schema/schema").VoucherCus;
 const NoteDB = require("../Schema/schema").Note;
+const redisClient = require("../Middleware/redisClient");
+let startTime;
+
+const { Kafka } = require("kafkajs");
+
+const kafka = new Kafka({
+  clientId: "my-producer",
+  brokers: ["localhost:9092"],
+});
+
+const producer = kafka.producer();
+
+const run = async (status) => {
+  const currentTime = Date.now();
+  const timeElapsed = currentTime - startTime;
+
+  await producer.connect();
+
+  if (status === 200) {
+    await producer.send({
+      topic: "useVoucher",
+      messages: [{ value: "Bạn sử dụng voucher thành công" }],
+    });
+    return;
+  } else if (status === 400) {
+    await producer.send({
+      topic: "useVoucher",
+      messages: [{ value: "Voucher bạn sử dụng bị lỗi rồi 😝😝😝" }],
+    });
+    await producer.disconnect();
+    return;
+  } else if (timeElapsed > 300000) {
+    await producer.send({
+      topic: "useVoucher",
+      messages: [{ value: "Voucher hết hạn, quá thời gian cho phép" }],
+    });
+    await producer.disconnect();
+    return;
+  } else {
+    await producer.send({
+      topic: "useVoucher",
+      messages: [{ value: "Đang sử dụng voucher" }],
+    });
+  }
+
+  await producer.disconnect();
+};
+
+run().catch(console.error);
 
 const CalculateVoucher = async (req, res) => {
   try {
@@ -75,6 +124,13 @@ const CheckVoucher = async (req, res) => {
     const CusID = req.decoded?.id;
     const { Service_ID } = req.body;
 
+    const cacheKey = `vouchers:${CusID}:${Service_ID}`;
+    const cachedData = await redisClient.get(cacheKey);
+
+    if (cachedData) {
+      return res.status(200).json(JSON.parse(cachedData));
+    }
+
     const havevoucher = await HaveVoucher.find({ Service_ID });
     const voucherCus = await VoucherCusDB.findOne({ CusID });
 
@@ -83,7 +139,6 @@ const CheckVoucher = async (req, res) => {
     }
 
     const voucherIDs = havevoucher.map((v) => v.Voucher_ID);
-
     let vouchers = [];
 
     if (voucherCus?.Voucher_ID && voucherIDs.includes(voucherCus.Voucher_ID)) {
@@ -137,6 +192,8 @@ const CheckVoucher = async (req, res) => {
         .status(404)
         .json({ message: "Voucher or conditions not found" });
     }
+
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(uniqueVouchers));
 
     res.status(200).json(uniqueVouchers);
   } catch (error) {
@@ -258,10 +315,12 @@ const ApplyVoucher = async (req, res) => {
       );
 
       if (!voucher) {
+        run(400);
         return res.status(404).json({ message: "Voucher not found" });
       }
 
       if (voucher.RemainQuantity < 1) {
+        run(400);
         await Voucher.findByIdAndUpdate(_id, { $set: { States: "disable" } });
       }
     }
@@ -282,6 +341,7 @@ const ApplyVoucher = async (req, res) => {
     });
     await history.save();
 
+    run(200);
     res.status(200).json(history);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -382,7 +442,10 @@ const RequireVoucher = async (req, res) => {
       StateNote,
     });
 
+    startTime = Date.now();
     await Note.save();
+
+    run(0);
     res.status(200).json({ message: "Connect successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -398,6 +461,11 @@ const GetNote = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+process.on("SIGINT", async () => {
+  await producer.disconnect();
+  process.exit(0);
+});
 
 module.exports = {
   CalculateVoucher,
