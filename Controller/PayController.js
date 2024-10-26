@@ -9,8 +9,6 @@ const NoteDB = require("../Schema/schema").Note;
 const redisClient = require("../Middleware/redisClient");
 require("dotenv").config();
 
-let startTime;
-
 const { Kafka } = require("kafkajs");
 
 const kafka = new Kafka({
@@ -21,42 +19,37 @@ const kafka = new Kafka({
 const producer = kafka.producer();
 
 const run = async (status) => {
-  const currentTime = Date.now();
-  const timeElapsed = currentTime - startTime;
-
+  let timeElapsed = 0;
   await producer.connect();
+
+  while (timeElapsed < 300000 && status !== 200 && status !== 400) {
+    await producer.send({
+      topic: "useVoucher",
+      messages: [{ value: "Đang sử dụng voucher" }],
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    timeElapsed += 10000;
+  }
 
   if (status === 200) {
     await producer.send({
       topic: "useVoucher",
       messages: [{ value: "Bạn sử dụng voucher thành công" }],
     });
-    return;
   } else if (status === 400) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "Voucher bạn sử dụng bị lỗi rồi 😝😝😝" }],
+      messages: [{ value: "Voucher sử dụng không thành công" }],
     });
-    await producer.disconnect();
-    return;
-  } else if (timeElapsed > 300000) {
+  } else if (timeElapsed >= 300000) {
     await producer.send({
       topic: "useVoucher",
       messages: [{ value: "Voucher hết hạn, quá thời gian cho phép" }],
-    });
-    await producer.disconnect();
-    return;
-  } else {
-    await producer.send({
-      topic: "useVoucher",
-      messages: [{ value: "Đang sử dụng voucher" }],
     });
   }
 
   await producer.disconnect();
 };
-
-run().catch(console.error);
 
 const CalculateVoucher = async (req, res) => {
   try {
@@ -346,6 +339,7 @@ const ApplyVoucher = async (req, res) => {
     run(200);
     res.status(200).json(history);
   } catch (error) {
+    run(400);
     res.status(400).json({ message: error.message });
   }
 };
@@ -432,7 +426,6 @@ const getVoucherByCus = async (req, res) => {
 const RequireVoucher = async (req, res) => {
   try {
     const { Service_ID, Partner_ID, Price, CusID, OrderID } = req.body;
-
     const StateNote = "Waiting";
 
     const Note = new NoteDB({
@@ -444,10 +437,10 @@ const RequireVoucher = async (req, res) => {
       StateNote,
     });
 
-    startTime = Date.now();
     await Note.save();
 
-    run(0);
+    run(0).catch(console.error);
+
     res.status(200).json({ message: "Connect successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
