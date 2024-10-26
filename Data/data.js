@@ -1,8 +1,8 @@
-require("dotenv").config();
+const { MONGODB_URI, KAFKA_URI } = require("../Middleware/config.js");
 const mongoose = require("mongoose");
-
+console.log(KAFKA_URI);
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB!");
   })

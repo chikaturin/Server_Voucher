@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const data = require("./Data/data.js");
 const cors = require("cors");
+const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
@@ -25,3 +26,27 @@ app.use("/api", require("./Router/StatisticalRouter.js"));
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+const kafka = new Kafka({
+  clientId: "my-consumer",
+  brokers: ["localhost:9092"],
+});
+
+const consumer = kafka.consumer({ groupId: "my-group" });
+
+const run = async () => {
+  await consumer.connect();
+  await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
+
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      console.log({
+        partition,
+        offset: message.offset,
+        value: message.value.toString(),
+      });
+    },
+  });
+};
+
+run().catch(console.error);

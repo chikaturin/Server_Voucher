@@ -7,13 +7,15 @@ const PersonalDB = require("../Schema/schema").Personal;
 const VoucherCusDB = require("../Schema/schema").VoucherCus;
 const NoteDB = require("../Schema/schema").Note;
 const redisClient = require("../Middleware/redisClient");
+require("dotenv").config();
+
 let startTime;
 
 const { Kafka } = require("kafkajs");
 
 const kafka = new Kafka({
   clientId: "my-producer",
-  brokers: ["localhost:9092"],
+  brokers: [process.env.KAFKA_URI],
 });
 
 const producer = kafka.producer();

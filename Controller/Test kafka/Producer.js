@@ -1,8 +1,9 @@
 const { Kafka } = require("kafkajs");
+require("dotenv").config();
 
 const kafka = new Kafka({
   clientId: "my-producer",
-  brokers: ["localhost:9092"],
+  brokers: [process.env.KAFKA_URI],
 });
 
 const producer = kafka.producer();
