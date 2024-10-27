@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   createHistory,
   Statistical_Voucher,
-  Staitstical_PartnerService,
+  Statistical_PartnerService,
   StatisticalSort,
   Statistical_VoucherFindPartner_Service,
   HistoryCus,
@@ -17,7 +17,7 @@ router.get("/Statistical_Voucher", Statistical_Voucher);
 router.get(
   "/Staitstical_PartnerService",
   checktokken,
-  Staitstical_PartnerService
+  Statistical_PartnerService
 );
 router.post("/StatisticalSort", StatisticalSort);
 
