@@ -7,6 +7,12 @@ const PersonalDB = require("../Schema/schema").Personal;
 const VoucherCusDB = require("../Schema/schema").VoucherCus;
 const NoteDB = require("../Schema/schema").Note;
 const redisClient = require("../Middleware/redisClient");
+
+const ensureRedisConnection = async () => {
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+};
 require("dotenv").config();
 
 const { Kafka } = require("kafkajs");
@@ -116,6 +122,7 @@ const CheckPoint = async (req, res) => {
 
 const CheckVoucher = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const CusID = req.decoded?.id;
     const { Service_ID } = req.body;
 

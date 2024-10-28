@@ -335,6 +335,7 @@ const createVoucherbyPartner = async (req, res) => {
 //-------------------------------------------------------------detailvoucher
 const DetailVoucher = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
 
     const cacheDetail = await redisClient.get(`voucher:${_id}`);
@@ -449,6 +450,7 @@ const deleteVoucher = async (req, res) => {
 //---------------------------------------get voucher by admin voucher lấy tất cả voucher để xem bởi admin
 const getVoucherByAdmin = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const cacheKey = "vouchers:admin";
 
     const cachedVouchers = await redisClient.get(cacheKey);
@@ -492,6 +494,7 @@ const getVoucherByAdmin = async (req, res) => {
 //----------------------------------------------get voucher by partner ở trên web của mình
 const getvoucherManagerbyPartner = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const Partner_ID = req.decoded.partnerId;
     const cachedVouchers = await redisClient.get(`vouchers:${Partner_ID}`);
     if (cachedVouchers) {

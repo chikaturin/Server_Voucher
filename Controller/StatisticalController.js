@@ -1,6 +1,11 @@
 const HistoryDB = require("../Schema/schema").History;
 const CounterHistoryDB = require("../Schema/schema").counterHistory;
 const redisClient = require("../Middleware/redisClient");
+const ensureRedisConnection = async () => {
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+};
 
 const createHistory = async (req, res) => {
   try {
@@ -29,6 +34,7 @@ const createHistory = async (req, res) => {
 };
 
 const Statistical_Voucher = async (req, res) => {
+  await ensureRedisConnection();
   const cacheKey = "Statistical_Voucher";
   const cacheStatistical = await redisClient.get(cacheKey);
   if (cache) {
@@ -43,16 +49,25 @@ const Statistical_Voucher = async (req, res) => {
 };
 
 const HistoryCus = async (req, res) => {
+  await ensureRedisConnection();
   const { CusID } = req.decoded._id;
+  const cacheKey = `HistoryCus_${CusID}`;
+  const cacheHistory = await redisClient.get(cacheKey);
+  if (cacheHistory) {
+    return res.status(200).json(JSON.parse(cacheHistory));
+  }
+
   const history = await HistoryDB.find({ CusID });
   if (!history) {
     return res.status(404).json({ message: "History not found" });
   }
+  await redisClient.set(cacheKey, JSON.stringify(history));
   res.json(history);
 };
 
 const Statistical_VoucherFindPartner_Service = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const cacheKey = "Statistical_VoucherFindPartner_Service";
     const cacheStatistical = await redisClient.get(cacheKey);
     if (cacheStatistical) {
@@ -84,6 +99,7 @@ const Statistical_VoucherFindPartner_Service = async (req, res) => {
 };
 
 const Statistical_PartnerService = async (req, res) => {
+  await ensureRedisConnection();
   const { Partner_ID } = req.decoded._id;
   const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
   if (cacheStatistical) {
