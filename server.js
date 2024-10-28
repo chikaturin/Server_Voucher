@@ -29,9 +29,7 @@ app.listen(PORT, () => {
 
 const consumerKafka = new Kafka({
   clientId: "my-consumer",
-  brokers: [
-    `${process.env.KAFKA_HOST || "kafka"}:${process.env.KAFKA_PORT || "9093"}`,
-  ],
+  brokers: [`${process.env.KAFKA_URI || "54.173.73.228:9092"}`],
 });
 
 const consumer = consumerKafka.consumer({ groupId: "my-group" });
