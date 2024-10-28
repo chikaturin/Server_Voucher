@@ -1,8 +1,6 @@
 const HistoryDB = require("../Schema/schema").History;
 const CounterHistoryDB = require("../Schema/schema").counterHistory;
 const redisClient = require("../Middleware/redisClient");
-const redisClient = require("../Middleware/redisClient");
-
 const ensureRedisConnection = async () => {
   if (!redisClient.isOpen) {
     await redisClient.connect();
