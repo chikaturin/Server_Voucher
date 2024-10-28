@@ -9,18 +9,16 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
-    ports:
-      - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://54.173.73.228:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://<public-ip>:9092
+      KAFKA_JVM_OPTS: "-Xms512M -Xmx512M"
     depends_on:
       - zookeeper
+    ports:
+      - "9092:9092"
 
   redis:
     image: redis:latest
