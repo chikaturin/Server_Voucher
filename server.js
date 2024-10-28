@@ -30,7 +30,7 @@ app.listen(PORT, () => {
 const consumerKafka = new Kafka({
   clientId: "my-consumer",
   brokers: [
-    `${process.env.KAFKA_HOST || "kafka"}:${process.env.KAFKA_PORT || "9092"}`,
+    `${process.env.KAFKA_HOST || "kafka"}:${process.env.KAFKA_PORT || "9093"}`,
   ],
 });
 
