@@ -4,9 +4,71 @@ const ConditionDB = require("../Schema/schema").Condition;
 const CounterCondition = require("../Schema/schema").counterCondition;
 const HaveVoucherDB = require("../Schema/schema").HaveVoucher;
 const CounterHaveVoucher = require("../Schema/schema").counterHaveVoucher;
+const { z } = require("zod");
+const redisClient = require("../Middleware/redisClient");
+
+const ensureRedisConnection = async () => {
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+};
 
 const createVoucherbyAdmin = async (req, res) => {
+  const voucherSchema = z
+    .object({
+      _id: z.string(),
+      Name: z.string().min(1, "Name is required"),
+      ReleaseTime: z
+        .string()
+        .refine((date) => new Date(date).getTime() > Date.now(), {
+          message: "ReleaseTime phải sau thời gian hiện tại",
+        }),
+      ExpiredTime: z.string(),
+      Description: z.string().optional(),
+      Image: z.string().optional(),
+      RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
+
+      Conditions: z
+        .array(
+          z.object({
+            MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
+            MaxValue: z.number().min(0, "MaxValue phải lớn hơn 0"),
+          })
+        )
+        .superRefine((conditions, ctx) => {
+          conditions.forEach((condition, index) => {
+            if (condition.MaxValue >= condition.MinValue) {
+              ctx.addIssue({
+                path: ["Conditions", index, "MaxValue"],
+                message: "MaxValue phải nhỏ hơn MinValue",
+              });
+            }
+          });
+        }),
+      PercentDiscount: z
+        .number()
+        .min(0, "PercentDiscount phải lớn hơn 0")
+        .max(100, "PercentDiscount không được vượt quá 100"),
+      HaveVouchers: z.array(
+        z.object({
+          Service_ID: z.string(),
+        })
+      ),
+    })
+    .superRefine((data, ctx) => {
+      const { ReleaseTime, ExpiredTime } = data;
+
+      if (new Date(ExpiredTime).getTime() <= new Date(ReleaseTime).getTime()) {
+        ctx.addIssue({
+          path: ["ExpiredTime"],
+          message: "ExpiredTime phải sau ReleaseTime",
+        });
+      }
+    });
+
   try {
+    await ensureRedisConnection();
+    const validatedData = voucherSchema.parse(req.body);
     const {
       _id,
       Name,
@@ -18,33 +80,31 @@ const createVoucherbyAdmin = async (req, res) => {
       Conditions,
       PercentDiscount,
       HaveVouchers,
-    } = req.body;
+    } = validatedData;
+
     const AmountUsed = 0;
-    if (ReleaseTime >= ExpiredTime) {
-      return res
-        .status(400)
-        .json({ message: "ExpiredTime phải sau ReleaseTime" });
-    }
-    if (new Date(ReleaseTime).getTime() < Date.now()) {
-      return res
-        .status(400)
-        .json({ message: "Ngày sử dụng voucher phải sau thời gian hiện tại" });
-    }
-    let States = "disable";
-    if (new Date(ReleaseTime).getTime() == Date.now()) {
-      States = "enable";
+    const States =
+      new Date(ReleaseTime).getTime() === Date.now() ? "enable" : "disable";
+
+    const reply = await redisClient.get(`voucher:${_id}`);
+    if (reply) {
+      return res.status(400).json({ message: "Voucher đã tồn tại" });
     }
 
     let min = Conditions[0].MinValue;
 
-    if (PercentDiscount < 0 || PercentDiscount > 100) {
-      return res
-        .status(400)
-        .json({ message: "PercentDiscount phải từ 0 đến 100" });
-    }
-    let newCondition;
     for (const condition of Conditions) {
       const { MinValue, MaxValue } = condition;
+
+      if (MaxValue > MinValue) {
+        return res.status(400).json({
+          message: "MaxValue phải nhỏ hơn MinValue",
+        });
+      }
+
+      if (min > MinValue) {
+        min = MinValue;
+      }
 
       const counterCondition = await CounterCondition.findOneAndUpdate(
         { _id: "GenaralCondition" },
@@ -52,30 +112,14 @@ const createVoucherbyAdmin = async (req, res) => {
         { new: true, upsert: true }
       );
       const idCondition = `CD${counterCondition.seq}`;
-
-      if (MinValue < 0 || MaxValue < 0) {
-        return res
-          .status(400)
-          .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
-      }
-
-      if (
-        MaxValue > MinValue &&
-        MaxValue >= (MinValue * PercentDiscount) / 100
-      ) {
-        return res.status(400).json({
-          message: `Maxvalue phải bé hơn ${(MinValue * PercentDiscount) / 100}`,
-        });
-      }
-      if (min > MinValue) {
-        min = MinValue;
-      }
-      newCondition = new ConditionDB({
+      const newCondition = new ConditionDB({
         _id: idCondition,
         Voucher_ID: _id,
         MinValue,
         MaxValue,
       });
+
+      await newCondition.save();
     }
 
     const voucher = new VoucherDB({
@@ -93,7 +137,6 @@ const createVoucherbyAdmin = async (req, res) => {
     });
 
     await voucher.save();
-    await newCondition.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -111,6 +154,8 @@ const createVoucherbyAdmin = async (req, res) => {
       await newHaveVoucher.save();
     }
 
+    await redisClient.setEx(`voucher:${_id}`, 3600, JSON.stringify(voucher));
+
     res.status(201).json({
       message: "Voucher và các điều kiện đã được tạo thành công",
       voucher: voucher,
@@ -122,7 +167,61 @@ const createVoucherbyAdmin = async (req, res) => {
 
 //-------------------------------------------------create voucher by partner
 const createVoucherbyPartner = async (req, res) => {
+  const voucherSchema = z
+    .object({
+      _id: z.string(),
+      Name: z.string().min(1, "Name is required"),
+      ReleaseTime: z
+        .string()
+        .refine((date) => new Date(date).getTime() > Date.now(), {
+          message: "ReleaseTime phải sau thời gian hiện tại",
+        }),
+      ExpiredTime: z.string(),
+      Description: z.string().optional(),
+      Image: z.string().optional(),
+      RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
+
+      Conditions: z
+        .array(
+          z.object({
+            MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
+            MaxValue: z.number().min(0, "MaxValue phải lớn hơn 0"),
+          })
+        )
+        .superRefine((conditions, ctx) => {
+          conditions.forEach((condition, index) => {
+            if (condition.MaxValue >= condition.MinValue) {
+              ctx.addIssue({
+                path: ["Conditions", index, "MaxValue"],
+                message: "MaxValue phải nhỏ hơn MinValue",
+              });
+            }
+          });
+        }),
+      PercentDiscount: z
+        .number()
+        .min(0, "PercentDiscount phải lớn hơn 0")
+        .max(100, "PercentDiscount không được vượt quá 100"),
+      HaveVouchers: z.array(
+        z.object({
+          Service_ID: z.string(),
+        })
+      ),
+    })
+    .superRefine((data, ctx) => {
+      const { ReleaseTime, ExpiredTime } = data;
+
+      if (new Date(ExpiredTime).getTime() <= new Date(ReleaseTime).getTime()) {
+        ctx.addIssue({
+          path: ["ExpiredTime"],
+          message: "ExpiredTime phải sau ReleaseTime",
+        });
+      }
+    });
+
   try {
+    await ensureRedisConnection();
+    const validatedData = voucherSchema.parse(req.body);
     const {
       _id,
       Name,
@@ -131,43 +230,48 @@ const createVoucherbyPartner = async (req, res) => {
       Description,
       Image,
       RemainQuantity,
-      PercentDiscount,
       Conditions,
+      PercentDiscount,
       HaveVouchers,
-    } = req.body;
+    } = validatedData;
 
     const AmountUsed = 0;
-    if (ReleaseTime >= ExpiredTime) {
-      return res
-        .status(400)
-        .json({ message: "ExpiredTime phải sau ReleaseTime" });
-    }
-    if (new Date(ReleaseTime).getTime() < Date.now()) {
-      return res
-        .status(400)
-        .json({ message: "Ngày sử dụng voucher phải sau thời gian hiện tại" });
-    }
-    let States = "disable";
-    if (new Date(ReleaseTime).getTime() == Date.now()) {
-      States = "enable";
-    }
-
-    if (PercentDiscount < 0 || PercentDiscount > 100) {
-      return res
-        .status(400)
-        .json({ message: "PercentDiscount phải từ 0 đến 100" });
-    }
+    const States =
+      new Date(ReleaseTime).getTime() === Date.now() ? "enable" : "disable";
 
     const partner_ID = req.decoded?.partnerId;
     if (!partner_ID) {
       return res.status(400).json({ message: "Không tìm thấy partner_ID" });
     }
 
+    const partner =
+      (await PartnerDB.findById(partner_ID)) ||
+      new PartnerDB({
+        _id: partner_ID,
+        Mail: req.decoded?.email,
+      });
+
+    await partner.save();
+
+    const reply = await redisClient.get(`voucher:${_id}`);
+    if (reply) {
+      return res.status(400).json({ message: "Voucher đã tồn tại" });
+    }
+
     let min = Conditions[0].MinValue;
-    let newCondition;
 
     for (const condition of Conditions) {
       const { MinValue, MaxValue } = condition;
+
+      if (MaxValue > MinValue) {
+        return res.status(400).json({
+          message: "MaxValue phải nhỏ hơn MinValue",
+        });
+      }
+
+      if (min > MinValue) {
+        min = MinValue;
+      }
 
       const counterCondition = await CounterCondition.findOneAndUpdate(
         { _id: "GenaralCondition" },
@@ -175,23 +279,14 @@ const createVoucherbyPartner = async (req, res) => {
         { new: true, upsert: true }
       );
       const idCondition = `CD${counterCondition.seq}`;
-
-      if (MinValue < 0 || MaxValue < 0) {
-        return res
-          .status(400)
-          .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
-      }
-
-      if (min > MinValue) {
-        min = MinValue;
-      }
-
-      newCondition = new ConditionDB({
+      const newCondition = new ConditionDB({
         _id: idCondition,
         Voucher_ID: _id,
         MinValue,
         MaxValue,
       });
+
+      await newCondition.save();
     }
 
     const voucher = new VoucherDB({
@@ -208,17 +303,8 @@ const createVoucherbyPartner = async (req, res) => {
       PercentDiscount,
       MinCondition: min,
     });
-    await voucher.save();
-    await newCondition.save();
 
-    const partner = await PartnerDB.findById(partner_ID);
-    if (!partner) {
-      const partner = new PartnerDB({
-        _id: partner_ID,
-        Mail: req.decoded?.email,
-      });
-      await partner.save();
-    }
+    await voucher.save();
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -236,6 +322,8 @@ const createVoucherbyPartner = async (req, res) => {
       await newHaveVoucher.save();
     }
 
+    await redisClient.setEx(`voucher:${_id}`, 3600, JSON.stringify(voucher));
+
     res.status(201).json({
       message: "Voucher và các điều kiện đã được tạo thành công",
       voucher: voucher,
@@ -247,7 +335,13 @@ const createVoucherbyPartner = async (req, res) => {
 //-------------------------------------------------------------detailvoucher
 const DetailVoucher = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
+
+    const cacheDetail = await redisClient.get(`voucher:${_id}`);
+    if (cacheDetail) {
+      return res.json(JSON.parse(cacheDetail));
+    }
 
     const vouchersWithDetails = await VoucherDB.aggregate([
       {
@@ -270,6 +364,11 @@ const DetailVoucher = async (req, res) => {
         },
       },
     ]);
+    await redisClient.setEx(
+      `voucher:${_id}`,
+      3600,
+      JSON.stringify(vouchersWithDetails)
+    );
     res.json(vouchersWithDetails);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -277,26 +376,40 @@ const DetailVoucher = async (req, res) => {
 };
 //---------------------------------------------------------------Update
 const updateVoucher = async (req, res) => {
+  const voucherSchema = z
+    .object({
+      ReleaseTime: z
+        .string()
+        .refine((date) => new Date(date).getTime() < Date.now(), {
+          message: "ReleaseTime phải trước thời gian hiện tại",
+        }),
+      ExpiredTime: z.string(),
+      Description: z.string().optional(),
+      Image: z.string().optional(),
+      RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
+    })
+    .superRefine((data, ctx) => {
+      const { ReleaseTime, ExpiredTime } = data;
+
+      if (new Date(ExpiredTime).getTime() <= new Date(ReleaseTime).getTime()) {
+        ctx.addIssue({
+          path: ["ExpiredTime"],
+          message: "ExpiredTime phải sau ReleaseTime",
+        });
+      }
+    });
+
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
+    const validatedData = voucherSchema.parse(req.body);
     const { ReleaseTime, ExpiredTime, Description, Image, RemainQuantity } =
-      req.body;
+      validatedData;
 
     const voucher = await VoucherDB.findById(_id);
 
     if (!voucher) {
       return res.status(404).json({ message: "Voucher not found" });
-    }
-
-    if (ReleaseTime >= ExpiredTime) {
-      return res
-        .status(400)
-        .json({ message: "ExpiredTime must be after ReleaseTime" });
-    }
-    if (ReleaseTime < new Date()) {
-      return res
-        .status(400)
-        .json({ message: "ReleaseTime must be after current time" });
     }
 
     voucher.ReleaseTime = ReleaseTime;
@@ -306,6 +419,7 @@ const updateVoucher = async (req, res) => {
     voucher.RemainQuantity = RemainQuantity;
 
     await voucher.save();
+    await redisClient.del(`voucher:${_id}`);
 
     res.json({
       message: "Voucher updated successfully and conditions are updated",
@@ -326,6 +440,7 @@ const deleteVoucher = async (req, res) => {
     }
     voucher.States = "disable";
     await voucher.save();
+    await redisClient.del(`voucher:${_id}`);
     res.json({ message: " VoucherDB deleted successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -335,6 +450,14 @@ const deleteVoucher = async (req, res) => {
 //---------------------------------------get voucher by admin voucher lấy tất cả voucher để xem bởi admin
 const getVoucherByAdmin = async (req, res) => {
   try {
+    await ensureRedisConnection();
+    const cacheKey = "vouchers:admin";
+
+    const cachedVouchers = await redisClient.get(cacheKey);
+    if (cachedVouchers) {
+      return res.json(JSON.parse(cachedVouchers));
+    }
+
     const vouchersWithDetails = await VoucherDB.aggregate([
       {
         $lookup: {
@@ -357,7 +480,11 @@ const getVoucherByAdmin = async (req, res) => {
     if (vouchersWithDetails.length === 0) {
       return res.status(404).json({ message: "No vouchers found" });
     }
-
+    await redisClient.setEx(
+      cacheKey,
+      3600,
+      JSON.stringify(vouchersWithDetails)
+    );
     res.json(vouchersWithDetails);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -367,7 +494,13 @@ const getVoucherByAdmin = async (req, res) => {
 //----------------------------------------------get voucher by partner ở trên web của mình
 const getvoucherManagerbyPartner = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const Partner_ID = req.decoded.partnerId;
+    const cachedVouchers = await redisClient.get(`vouchers:${Partner_ID}`);
+    if (cachedVouchers) {
+      return res.json(JSON.parse(cachedVouchers));
+    }
+
     const voucher = await VoucherDB.aggregate([
       { $match: { Partner_ID: Partner_ID } },
       {
@@ -387,6 +520,11 @@ const getvoucherManagerbyPartner = async (req, res) => {
         },
       },
     ]);
+    await redisClient.setEx(
+      `vouchers:${Partner_ID}`,
+      3600,
+      JSON.stringify(voucher)
+    );
     res.json(voucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -395,8 +533,8 @@ const getvoucherManagerbyPartner = async (req, res) => {
 //---------------------------------------updateState
 const updateState = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
-
     const voucher = await VoucherDB.findById(_id);
     if (!voucher) {
       return res
@@ -414,6 +552,7 @@ const updateState = async (req, res) => {
     }
 
     await voucher.save();
+    await redisClient.del(`voucher:${_id}`);
 
     res.status(200).json({ message: "State updated successfully" });
   } catch (error) {
@@ -422,7 +561,25 @@ const updateState = async (req, res) => {
 };
 //----------------------------------------updateContdition
 const updateCondition = async (req, res) => {
+  const conditionSchema = z.object({
+    MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
+    MaxValue: z
+      .number()
+      .min(0, "MaxValue phải lớn hơn 0")
+      .superRefine((conditions, ctx) => {
+        conditions.forEach((condition, index) => {
+          if (condition.MaxValue >= condition.MinValue) {
+            ctx.addIssue({
+              path: ["Conditions", index, "MaxValue"],
+              message: "MaxValue phải nhỏ hơn MinValue",
+            });
+          }
+        });
+      }),
+  });
+
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
     const conditionNew = await ConditionDB.findById(_id);
 
@@ -430,27 +587,15 @@ const updateCondition = async (req, res) => {
       return res.status(404).json({ message: "Condition not found" });
     }
 
-    const { MinValue, MaxValue, PercentDiscount } = req.body;
-
-    if (PercentDiscount < 0 || PercentDiscount > 100) {
-      return res
-        .status(400)
-        .json({ message: "PercentDiscount phải từ 0 đến 100" });
-    }
-    if (MinValue < 0 || MaxValue < 0) {
-      return res
-        .status(400)
-        .json({ message: "MinValue và MaxValue phải lớn hơn 0" });
-    }
-    if (!MinValue || !MaxValue || PercentDiscount) {
-      return res.status(400).json({ message: "Missing information" });
-    }
+    const validatedCondition = conditionSchema.parse(req.body);
+    const { MinValue, MaxValue } = validatedCondition;
 
     conditionNew.MinValue = MinValue;
     conditionNew.MaxValue = MaxValue;
-    conditionNew.PercentDiscount = PercentDiscount;
 
     await conditionNew.save();
+
+    await redisClient.del(`condition:${_id}`);
 
     res.json({
       message: "Condition updated successfully",
