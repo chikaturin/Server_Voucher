@@ -6,7 +6,7 @@ const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
-const PORT = 3000;
+const PORT = 4001;
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -27,12 +27,12 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-const kafka = new Kafka({
+const consumerKafka = new Kafka({
   clientId: "my-consumer",
-  brokers: ["localhost:9092"],
+  brokers: [process.env.KAFKA_URI || "localhost:9092"],
 });
 
-const consumer = kafka.consumer({ groupId: "my-group" });
+const consumer = consumerKafka.consumer({ groupId: "my-group" });
 
 const run = async () => {
   await consumer.connect();

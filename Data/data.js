@@ -1,6 +1,6 @@
-const { MONGODB_URI, KAFKA_URI } = require("../Middleware/config.js");
+const { MONGODB_URI } = require("../Middleware/config.js");
 const mongoose = require("mongoose");
-console.log(KAFKA_URI);
+
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
