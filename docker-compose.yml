@@ -8,17 +8,6 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
-<<<<<<< HEAD
-=======
-    environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://54.173.73.228:9092
-      KAFKA_JVM_OPTS: "-Xms512M -Xmx512M"
-    depends_on:
-      - zookeeper
->>>>>>> 54759d030ef545bc46cf244d25208738429ab928
     ports:
       - "9092:9092"
     environment:
