@@ -6,7 +6,7 @@ const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
-const PORT = 3000;
+const PORT = 3001;
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -29,11 +29,7 @@ app.listen(PORT, () => {
 
 const consumerKafka = new Kafka({
   clientId: "my-consumer",
-  brokers: [
-    `${process.env.KAFKA_HOST || "localhost"}:${
-      process.env.KAFKA_PORT || "9092"
-    }`,
-  ],
+  brokers: [`localhost:9092`],
 });
 
 const consumer = consumerKafka.consumer({ groupId: "my-group" });
