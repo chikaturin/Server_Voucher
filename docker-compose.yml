@@ -13,7 +13,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://18.209.35.247:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://34.204.80.177:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_HEAP_OPTS: "-Xmx512M -Xms512M"
@@ -42,7 +42,7 @@ services:
       MONGODB_URI: mongodb+srv://chikaturin:123@cluster0.ltx6a.mongodb.net/?retryWrites=true&w=majority&appName=cluster0
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      KAFKA_HOST: 18.209.35.247
+      KAFKA_HOST: 34.204.80.177
       KAFKA_PORT: 9092
     depends_on:
       - kafka
