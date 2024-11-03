@@ -31,7 +31,7 @@ const run = async (status) => {
   while (timeElapsed < 300000 && status !== 200 && status !== 400) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "Đang sử dụng voucher" }],
+      messages: [{ value: "USING" }],
     });
     await new Promise((resolve) => setTimeout(resolve, 10000));
     timeElapsed += 10000;
@@ -40,17 +40,17 @@ const run = async (status) => {
   if (status === 200) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "Bạn sử dụng voucher thành công" }],
+      messages: [{ value: "SUCCESS" }],
     });
   } else if (status === 400) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "Voucher sử dụng không thành công" }],
+      messages: [{ value: "FAILED" }],
     });
   } else if (timeElapsed >= 300000) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "Voucher hết hạn, quá thời gian cho phép" }],
+      messages: [{ value: "OVER TIME" }],
     });
   }
 
@@ -282,7 +282,8 @@ const ReceiveVoucher = async (req, res) => {
 const ApplyVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
-    const { CusID, TotalDiscount, Price } = req.body;
+    const CusID = req.decoded?.email;
+    const { TotalDiscount, Price } = req.body;
 
     let personalVoucher = await PersonalDB.findOne({ CusID });
     let voucherCus = await VoucherCusDB.findOne({ CusID, Voucher_ID: _id });
@@ -432,14 +433,13 @@ const getVoucherByCus = async (req, res) => {
 
 const RequireVoucher = async (req, res) => {
   try {
-    const { Service_ID, Partner_ID, Price, CusID, OrderID } = req.body;
+    const { Service_ID, Partner_ID, Price, OrderID } = req.body;
     const StateNote = "Waiting";
 
     const Note = new NoteDB({
       Service_ID,
       Partner_ID,
       Price,
-      CusID,
       OrderID,
       StateNote,
     });

@@ -28,23 +28,12 @@ const createVoucherbyAdmin = async (req, res) => {
       Image: z.string().optional(),
       RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
 
-      Conditions: z
-        .array(
-          z.object({
-            MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
-            MaxValue: z.number().min(0, "MaxValue phải lớn hơn 0"),
-          })
-        )
-        .superRefine((conditions, ctx) => {
-          conditions.forEach((condition, index) => {
-            if (condition.MaxValue >= condition.MinValue) {
-              ctx.addIssue({
-                path: ["Conditions", index, "MaxValue"],
-                message: "MaxValue phải nhỏ hơn MinValue",
-              });
-            }
-          });
-        }),
+      Conditions: z.array(
+        z.object({
+          MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
+          MaxValue: z.number().min(0, "MaxDiscount phải lớn hơn 0"),
+        })
+      ),
       PercentDiscount: z
         .number()
         .min(0, "PercentDiscount phải lớn hơn 0")
@@ -98,7 +87,7 @@ const createVoucherbyAdmin = async (req, res) => {
 
       if (MaxValue > MinValue) {
         return res.status(400).json({
-          message: "MaxValue phải nhỏ hơn MinValue",
+          message: "MaxDiscount phải nhỏ hơn MinValue",
         });
       }
 
@@ -181,23 +170,12 @@ const createVoucherbyPartner = async (req, res) => {
       Image: z.string().optional(),
       RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
 
-      Conditions: z
-        .array(
-          z.object({
-            MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
-            MaxValue: z.number().min(0, "MaxValue phải lớn hơn 0"),
-          })
-        )
-        .superRefine((conditions, ctx) => {
-          conditions.forEach((condition, index) => {
-            if (condition.MaxValue >= condition.MinValue) {
-              ctx.addIssue({
-                path: ["Conditions", index, "MaxValue"],
-                message: "MaxValue phải nhỏ hơn MinValue",
-              });
-            }
-          });
-        }),
+      Conditions: z.array(
+        z.object({
+          MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
+          MaxValue: z.number().min(0, "MaxDiscount phải lớn hơn 0"),
+        })
+      ),
       PercentDiscount: z
         .number()
         .min(0, "PercentDiscount phải lớn hơn 0")
@@ -262,12 +240,6 @@ const createVoucherbyPartner = async (req, res) => {
 
     for (const condition of Conditions) {
       const { MinValue, MaxValue } = condition;
-
-      if (MaxValue > MinValue) {
-        return res.status(400).json({
-          message: "MaxValue phải nhỏ hơn MinValue",
-        });
-      }
 
       if (min > MinValue) {
         min = MinValue;

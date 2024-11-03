@@ -82,7 +82,6 @@ const NoteSchema = new mongoose.Schema({
   Service_ID: { type: String, required: true },
   Partner_ID: { type: String, required: true },
   Price: { type: String, required: true },
-  CusID: { type: String, required: true },
   OrderID: { type: String, required: true },
   StateNote: { type: String, required: true },
 });
