@@ -83,7 +83,6 @@ const NoteSchema = new mongoose.Schema({
   Partner_ID: { type: String, required: true },
   Price: { type: String, required: true },
   OrderID: { type: String, required: true },
-  StateNote: { type: String, required: true },
 });
 
 // Models

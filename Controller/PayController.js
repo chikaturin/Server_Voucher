@@ -434,14 +434,12 @@ const getVoucherByCus = async (req, res) => {
 const RequireVoucher = async (req, res) => {
   try {
     const { Service_ID, Partner_ID, Price, OrderID } = req.body;
-    const StateNote = "Waiting";
 
     const Note = new NoteDB({
       Service_ID,
       Partner_ID,
       Price,
       OrderID,
-      StateNote,
     });
 
     await Note.save();
@@ -464,6 +462,16 @@ const GetNote = async (req, res) => {
   }
 };
 
+const deleteNote = async (req, res) => {
+  try {
+    const { OrderID } = req.params;
+    await NoteDB.deleteOne({ OrderID });
+    res.status(200).json({ message: "Delete successfully" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 process.on("SIGINT", async () => {
   await producer.disconnect();
   process.exit(0);
@@ -478,4 +486,5 @@ module.exports = {
   CheckPoint,
   RequireVoucher,
   GetNote,
+  deleteNote,
 };

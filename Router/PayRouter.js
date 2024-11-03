@@ -10,6 +10,7 @@ const {
   CheckPoint,
   RequireVoucher,
   GetNote,
+  deleteNote,
 } = require("../Controller/PayController.js");
 const { checktokken } = require("../Middleware/check.js");
 
@@ -29,5 +30,7 @@ router.post("/RequireVoucher", RequireVoucher);
 router.get("/GetNote/:OrderID", GetNote);
 
 router.get("/CheckToken", checktokken);
+
+router.delete("deleteNote", deleteNote);
 
 module.exports = router;
