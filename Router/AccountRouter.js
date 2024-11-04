@@ -15,7 +15,7 @@ router.post("/register", register);
 router.post("/signIn", signIn);
 
 router.get("/getService", getService);
-router.get("/getService/:_id", getServiceID);
+router.get("/getServiceID/:_id", getServiceID);
 router.get("/getPartner", getPartner);
 router.post("/createService", createService);
 router.get("/user", checktokken, (req, res) => {

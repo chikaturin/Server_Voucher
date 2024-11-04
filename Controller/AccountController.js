@@ -76,11 +76,16 @@ const getService = async (req, res) => {
 
 const getServiceID = async (req, res) => {
   try {
-    const { ServiceID } = req.params;
+    const { _id } = req.params;
     const response = await axios.get(
-      `https://sso.htilssu.id.vn/v1/services/${ServiceID}`
+      `https://sso.htilssu.id.vn/v1/services/${_id}`
     );
-    res.json(response.data.data);
+
+    if (!response.data) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    res.json(response.data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
