@@ -76,7 +76,7 @@ const getService = async (req, res) => {
 
 const getServiceID = async (req, res) => {
   try {
-    const { ServiceID } = req.body;
+    const { ServiceID } = req.params;
     const response = await axios.get(
       `https://sso.htilssu.id.vn/v1/services/${ServiceID}`
     );
