@@ -24,7 +24,7 @@ const kafka = new Kafka({
 
 const producer = kafka.producer();
 
-const run = async (status) => {
+const run = async (status, infor) => {
   let timeElapsed = 0;
   await producer.connect();
 
@@ -40,7 +40,7 @@ const run = async (status) => {
   if (status === 200) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "SUCCESS" }],
+      messages: [{ value: infor }],
     });
   } else if (status === 400) {
     await producer.send({
@@ -287,6 +287,7 @@ const ApplyVoucher = async (req, res) => {
 
     let personalVoucher = await PersonalDB.findOne({ CusID });
     let voucherCus = await VoucherCusDB.findOne({ CusID, Voucher_ID: _id });
+    const voucherName = await Voucher.findById(_id);
 
     const Point = Price / 100000;
 
@@ -318,13 +319,16 @@ const ApplyVoucher = async (req, res) => {
       );
 
       if (!voucher) {
-        run(400);
+        await run(400, "FAILED");
         return res.status(404).json({ message: "Voucher not found" });
       }
 
       if (voucher.RemainQuantity < 1) {
-        run(400);
+        await run(400, "FAILED");
         await Voucher.findByIdAndUpdate(_id, { $set: { States: "disable" } });
+        return res
+          .status(400)
+          .json({ message: "Voucher quantity is insufficient" });
       }
     }
 
@@ -344,10 +348,12 @@ const ApplyVoucher = async (req, res) => {
     });
     await history.save();
 
-    run(200);
+    const Infor = `VoucherID:"${_id}", VoucherName:"${voucherName.Name}"  Discount:"${TotalDiscount}"`;
+    await run(200, Infor);
+
     res.status(200).json(history);
   } catch (error) {
-    run(400);
+    await run(400, "FAILED");
     res.status(400).json({ message: error.message });
   }
 };
@@ -444,7 +450,7 @@ const RequireVoucher = async (req, res) => {
 
     await Note.save();
 
-    run(0).catch(console.error);
+    run(0, "START").catch(console.error);
 
     res.status(200).json({ message: "Connect successfully" });
   } catch (error) {
