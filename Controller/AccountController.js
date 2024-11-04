@@ -1,6 +1,7 @@
 const Account = require("../Schema/schema.js").AccountAdmin;
 const Service = require("../Schema/schema.js").Service;
 const Partner = require("../Schema/schema.js").Partner;
+const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs"); // Thêm thư viện bcryptjs để mã hóa mật khẩu
@@ -66,8 +67,20 @@ const signIn = async (req, res) => {
 
 const getService = async (req, res) => {
   try {
-    const service = await Service.find();
-    res.json(service);
+    const response = await axios.get("https://sso.htilssu.id.vn/v1/services");
+    res.json(response.data.data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getServiceID = async (req, res) => {
+  try {
+    const { ServiceID } = req.body;
+    const response = await axios.get(
+      `https://sso.htilssu.id.vn/v1/services/${ServiceID}`
+    );
+    res.json(response.data.data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -106,4 +119,5 @@ module.exports = {
   getService,
   getPartner,
   createService,
+  getServiceID,
 };
