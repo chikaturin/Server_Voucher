@@ -40,7 +40,7 @@ const run = async (status, infor) => {
   if (status === 200) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: infor }],
+      messages: [{ value: JSON.stringify(infor) }],
     });
   } else if (status === 400) {
     await producer.send({
