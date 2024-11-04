@@ -25,28 +25,3 @@ services:
     image: redis:latest
     ports:
       - "6379:6379"
-
-  mongodb:
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: chikaturin
-      MONGO_INITDB_ROOT_PASSWORD: 123
-    ports:
-      - "27017:27017"
-
-  node:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      MONGODB_URI: mongodb+srv://chikaturin:123@cluster0.ltx6a.mongodb.net/?retryWrites=true&w=majority&appName=cluster0
-      REDIS_HOST: api.wowo.htilssu.id.vn
-      REDIS_PORT: 6379
-      KAFKA_HOST: 54.161.104.151
-      KAFKA_PORT: 9092
-    depends_on:
-      - kafka
-      - redis
-      - mongodb
-    ports:
-      - "3000:3000"
