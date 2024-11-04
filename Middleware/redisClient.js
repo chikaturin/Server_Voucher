@@ -2,7 +2,7 @@ const redis = require("redis");
 
 const redisClient = redis.createClient({
   socket: {
-    host: `${process.env.KAFKA_HOST}`,
+    host: `54.161.104.151`,
     port: 6379,
   },
 });
