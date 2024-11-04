@@ -20,10 +20,7 @@ services:
       MONGODB_URI: mongodb+srv://chikaturin:123@cluster0.ltx6a.mongodb.net/?retryWrites=true&w=majority&appName=cluster0
       REDIS_HOST: 54.161.104.151
       REDIS_PORT: 6379
-      KAFKA_HOST: api.wowo.htilssu.id.vn
-      KAFKA_PORT: 9092
     depends_on:
-      - kafka
       - redis
       - mongodb
     ports:
