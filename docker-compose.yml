@@ -12,3 +12,19 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: 123
     ports:
       - "27017:27017"
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      MONGODB_URI: mongodb+srv://chikaturin:123@cluster0.ltx6a.mongodb.net/?retryWrites=true&w=majority&appName=cluster0
+      REDIS_HOST: 54.161.104.151
+      REDIS_PORT: 6379
+      KAFKA_HOST: api.wowo.htilssu.id.vn
+      KAFKA_PORT: 9092
+    depends_on:
+      - kafka
+      - redis
+      - mongodb
+    ports:
+      - "3000:3000"
