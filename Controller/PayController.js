@@ -283,7 +283,7 @@ const ApplyVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
     const CusID = req.decoded?.email;
-    const { TotalDiscount, Price } = req.body;
+    const { TotalDiscount, Price, OrderID } = req.body;
 
     let personalVoucher = await PersonalDB.findOne({ CusID });
     let voucherCus = await VoucherCusDB.findOne({ CusID, Voucher_ID: _id });
@@ -348,7 +348,14 @@ const ApplyVoucher = async (req, res) => {
     });
     await history.save();
 
-    const Infor = `VoucherID:"${_id}", VoucherName:"${voucherName.Name}"  Discount:"${TotalDiscount}"`;
+    const Infor = {
+      VoucherID: _id,
+      VoucherName: voucherName.Name,
+      Discount: TotalDiscount,
+      OrderID,
+      Price,
+    };
+
     await run(200, Infor);
 
     res.status(200).json(history);
