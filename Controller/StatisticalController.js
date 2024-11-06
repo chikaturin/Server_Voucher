@@ -1,6 +1,7 @@
 const HistoryDB = require("../Schema/schema").History;
 const CounterHistoryDB = require("../Schema/schema").counterHistory;
 const redisClient = require("../Middleware/redisClient");
+const { Voucher } = require("../Schema/schema");
 const ensureRedisConnection = async () => {
   if (!redisClient.isOpen) {
     await redisClient.connect();
@@ -99,20 +100,36 @@ const Statistical_VoucherFindPartner_Service = async (req, res) => {
 };
 
 const Statistical_PartnerService = async (req, res) => {
-  await ensureRedisConnection();
-  const { Partner_ID } = req.decoded._id;
-  const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
-  await redisClient.del(`Statistical:${Partner_ID}`);
-  if (cacheStatistical) {
-    return res.status(200).json(JSON.parse(cacheStatistical));
-  }
+  try {
+    await ensureRedisConnection();
+    const Partner_ID = req.decoded.partnerId;
 
-  const history = await HistoryDB.find({ Partner_ID });
-  if (!history) {
-    return res.status(404).json({ message: "History not found" });
+    const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
+    if (cacheStatistical) {
+      return res.status(200).json(JSON.parse(cacheStatistical));
+    }
+
+    const voucher = await Voucher.find({ Partner_ID });
+    if (!voucher || voucher.length === 0) {
+      return res.status(404).json({ message: "Voucher not found" });
+    }
+
+    const voucherID = voucher.map((v) => v._id);
+
+    const history = await HistoryDB.find({ Voucher_ID: { $in: voucherID } });
+    if (!history || history.length === 0) {
+      return res.status(404).json({ message: "History not found" });
+    }
+
+    await redisClient.setEx(
+      `Statistical:${Partner_ID}`,
+      3600,
+      JSON.stringify(history)
+    );
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-  await redisClient.set(`Statistical:${Partner_ID}`, JSON.stringify(history));
-  res.json(history);
 };
 
 const StatisticalSort = async (req, res) => {
