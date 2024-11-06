@@ -468,6 +468,9 @@ const getvoucherManagerbyPartner = async (req, res) => {
   try {
     await ensureRedisConnection();
     const Partner_ID = req.decoded.partnerId;
+
+    await redisClient.del(`vouchers:${Partner_ID}`);
+
     const cachedVouchers = await redisClient.get(`vouchers:${Partner_ID}`);
     if (cachedVouchers) {
       return res.json(JSON.parse(cachedVouchers));
@@ -502,6 +505,7 @@ const getvoucherManagerbyPartner = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 //---------------------------------------updateState
 const updateState = async (req, res) => {
   try {
