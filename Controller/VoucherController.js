@@ -611,9 +611,9 @@ const updateState = async (req, res) => {
     } else {
       voucher.States = voucher.States === "enable" ? "disable" : "enable";
     }
-
     await voucher.save();
-    await redisClient.del(`voucher:${_id}`);
+    await redisClient.del(`voucher:${voucher.Partner_ID}`);
+    await redisClient.del(`vouchers:admin`);
 
     res.status(200).json({ message: "State updated successfully" });
   } catch (error) {
