@@ -598,8 +598,9 @@ const updateState = async (req, res) => {
     if (voucher.RemainQuantity == 0 || voucher.ReleaseTime > new Date()) {
       voucher.States = "disable";
       return res.status(400).json({
-        message:
-          "You cann't update state, when RemainQuantity=0 or ReleaseTime>now",
+        message: `You cann't update state, when RemainQuantity=0 or ${
+          voucher.ReleaseTime
+        }<${new Date()}`,
       });
     } else {
       voucher.States = voucher.States === "enable" ? "disable" : "enable";
