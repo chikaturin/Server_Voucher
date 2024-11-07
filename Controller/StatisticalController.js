@@ -109,17 +109,27 @@ const Statistical_PartnerService = async (req, res) => {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
 
-    const voucher = await Voucher.find({ Partner_ID });
-    if (!voucher || voucher.length === 0) {
-      return res.status(404).json({ message: "Voucher not found" });
-    }
-
-    const voucherID = voucher.map((v) => v._id);
-
-    const history = await HistoryDB.find({ Voucher_ID: { $in: voucherID } });
-    if (!history || history.length === 0) {
-      return res.status(404).json({ message: "History not found" });
-    }
+    const Statistical = await HistoryDB.aggregate([
+      {
+        $match: {
+          Partner_ID,
+        },
+        $lookup: {
+          from: "vouchers",
+          localField: "Voucher_ID",
+          foreignField: "_id",
+          as: "vouchers",
+        },
+      },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "Voucher_ID",
+          foreignField: "Voucher_ID",
+          as: "haveVouchers",
+        },
+      },
+    ]);
 
     await redisClient.setEx(
       `Statistical:${Partner_ID}`,
