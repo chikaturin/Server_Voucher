@@ -434,7 +434,7 @@ const deleteVoucher = async (req, res) => {
     if (!voucher) {
       return res.status(404).json({ message: " VoucherDB not found" });
     }
-    voucher.States = "disable";
+    voucher.States = "deleted";
     await voucher.save();
     await redisClient.del(`voucher:${_id}`);
     res.json({ message: " VoucherDB deleted successfully" });
