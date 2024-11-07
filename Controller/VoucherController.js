@@ -4,6 +4,7 @@ const ConditionDB = require("../Schema/schema").Condition;
 const CounterCondition = require("../Schema/schema").counterCondition;
 const HaveVoucherDB = require("../Schema/schema").HaveVoucher;
 const CounterHaveVoucher = require("../Schema/schema").counterHaveVoucher;
+const cron = require("node-cron");
 const { z } = require("zod");
 const redisClient = require("../Middleware/redisClient");
 
@@ -657,6 +658,39 @@ const findcondition = async (req, res) => {
   }
   res.json(condition);
 };
+
+cron.schedule("0 0 * * *", async () => {
+  try {
+    const now = new Date();
+    console.log("Running cron job to check voucher states...");
+
+    const vouchersToUpdate = await Voucher.find({
+      $or: [
+        { ReleaseTime: { $lte: now }, ExpiredTime: { $gte: now } },
+        { ExpiredTime: { $lte: now } },
+      ],
+    });
+
+    vouchersToUpdate.forEach(async (voucher) => {
+      const releaseTime = new Date(voucher.ReleaseTime);
+      if (releaseTime.toDateString() === now.toDateString()) {
+        voucher.States = "enabled";
+      }
+
+      const expiredTime = new Date(voucher.ExpiredTime);
+      if (expiredTime.toDateString() === now.toDateString()) {
+        voucher.States = "disabled";
+      }
+
+      await voucher.save();
+      console.log(
+        `Voucher ${voucher._id} has been updated to ${voucher.States}`
+      );
+    });
+  } catch (error) {
+    console.error("Error updating vouchers:", error);
+  }
+});
 
 module.exports = {
   createVoucherbyAdmin,
