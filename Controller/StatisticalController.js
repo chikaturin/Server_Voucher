@@ -138,11 +138,10 @@ const Statistical_PartnerService = async (req, res) => {
       JSON.stringify(Statistical)
     );
 
-    // Send the result as the response
     res.status(200).json(Statistical);
   } catch (error) {
-    console.error(error); // Log the error for debugging
-    res.status(500).json({ message: error.message }); // Send error response
+    console.error(error);
+    res.status(500).json({ message: error.message });
   }
 };
 
