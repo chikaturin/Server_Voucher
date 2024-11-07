@@ -378,7 +378,7 @@ const updateVoucher = async (req, res) => {
     .object({
       ReleaseTime: z
         .string()
-        .refine((date) => new Date(date).getTime() < Date.now(), {
+        .refine((date) => new Date(date).getTime() > Date.now(), {
           message: "ReleaseTime phải sau thời gian hiện tại",
         }),
       ExpiredTime: z.string(),
@@ -430,6 +430,8 @@ const deleteVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
     const voucher = await VoucherDB.findById(_id);
+    await ensureRedisConnection();
+    await redisClient.del(`voucher:${_id}`);
 
     if (!voucher) {
       return res.status(404).json({ message: " VoucherDB not found" });
