@@ -429,9 +429,10 @@ const updateVoucher = async (req, res) => {
 const deleteVoucher = async (req, res) => {
   try {
     const { _id } = req.params;
+
     const voucher = await VoucherDB.findById(_id);
     await ensureRedisConnection();
-    await redisClient.del(`voucher:${_id}`);
+    await redisClient.del(`voucher:${voucher.Partner_ID}`);
 
     if (!voucher) {
       return res.status(404).json({ message: " VoucherDB not found" });
