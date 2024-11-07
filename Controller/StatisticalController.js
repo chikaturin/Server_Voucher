@@ -102,18 +102,19 @@ const Statistical_VoucherFindPartner_Service = async (req, res) => {
 const Statistical_PartnerService = async (req, res) => {
   try {
     await ensureRedisConnection();
-    const Partner_ID = req.decoded.partnerId;
-    await redisClient.del(`Statistical:${Partner_ID}`);
+    const { Partner_ID } = req.decoded.partnerId;
+
     const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
+
     if (cacheStatistical) {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
 
     const Statistical = await HistoryDB.aggregate([
       {
-        $match: {
-          Partner_ID,
-        },
+        $match: { Partner_ID },
+      },
+      {
         $lookup: {
           from: "vouchers",
           localField: "Voucher_ID",
@@ -134,11 +135,14 @@ const Statistical_PartnerService = async (req, res) => {
     await redisClient.setEx(
       `Statistical:${Partner_ID}`,
       3600,
-      JSON.stringify(history)
+      JSON.stringify(Statistical)
     );
-    res.json(history);
+
+    // Send the result as the response
+    res.status(200).json(Statistical);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error); // Log the error for debugging
+    res.status(500).json({ message: error.message }); // Send error response
   }
 };
 
