@@ -125,7 +125,7 @@ const CheckVoucher = async (req, res) => {
     await ensureRedisConnection();
     const CusID = req.decoded?.id;
     const { Service_ID } = req.body;
-
+    await redisClient.del(`vouchers:${CusID}:${Service_ID}`);
     const cacheKey = `vouchers:${CusID}:${Service_ID}`;
     const cachedData = await redisClient.get(cacheKey);
 

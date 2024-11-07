@@ -25,7 +25,6 @@ const createVoucherbyAdmin = async (req, res) => {
         }),
       ExpiredTime: z.string(),
       Description: z.string().optional(),
-      Image: z.string().optional(),
       RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
 
       Conditions: z.array(
@@ -64,7 +63,6 @@ const createVoucherbyAdmin = async (req, res) => {
       ReleaseTime,
       ExpiredTime,
       Description,
-      Image,
       RemainQuantity,
       Conditions,
       PercentDiscount,
@@ -111,13 +109,29 @@ const createVoucherbyAdmin = async (req, res) => {
       await newCondition.save();
     }
 
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Vui lòng tải lên hình ảnh." });
+    }
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ message: "File hình ảnh không được tải lên r nè" });
+    }
+
+    console.log(req.file);
+
+    const imageUrl = req.file.path;
+    console.log("Image uploaded:", imageUrl);
+
     const voucher = new VoucherDB({
       _id,
       Name,
       ReleaseTime,
       ExpiredTime,
       Description,
-      Image,
+      Image: imageUrl,
       RemainQuantity,
       States,
       AmountUsed,
@@ -167,16 +181,14 @@ const createVoucherbyPartner = async (req, res) => {
         }),
       ExpiredTime: z.string(),
       Description: z.string().optional(),
-      Image: z.string().optional(),
-      RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
-
+      RemainQuantity: z.coerce.number().min(0, "RemainQuantity phải lớn hơn 0"),
       Conditions: z.array(
         z.object({
-          MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
-          MaxValue: z.number().min(0, "MaxDiscount phải lớn hơn 0"),
+          MinValue: z.coerce.number().min(0, "MinValue phải lớn hơn 0"),
+          MaxValue: z.coerce.number().min(0, "MaxDiscount phải lớn hơn 0"),
         })
       ),
-      PercentDiscount: z
+      PercentDiscount: z.coerce
         .number()
         .min(0, "PercentDiscount phải lớn hơn 0")
         .max(100, "PercentDiscount không được vượt quá 100"),
@@ -199,6 +211,12 @@ const createVoucherbyPartner = async (req, res) => {
 
   try {
     await ensureRedisConnection();
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Vui lòng tải lên hình ảnh." });
+    }
+    const imageUrl = req.file.path;
     const validatedData = voucherSchema.parse(req.body);
     const {
       _id,
@@ -206,7 +224,6 @@ const createVoucherbyPartner = async (req, res) => {
       ReleaseTime,
       ExpiredTime,
       Description,
-      Image,
       RemainQuantity,
       Conditions,
       PercentDiscount,
@@ -268,7 +285,7 @@ const createVoucherbyPartner = async (req, res) => {
       ReleaseTime,
       ExpiredTime,
       Description,
-      Image,
+      Image: imageUrl,
       RemainQuantity,
       States,
       AmountUsed,
@@ -304,11 +321,14 @@ const createVoucherbyPartner = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 //-------------------------------------------------------------detailvoucher
 const DetailVoucher = async (req, res) => {
   try {
     await ensureRedisConnection();
     const { _id } = req.params;
+
+    await redisClient.del(`voucher:${_id}`);
 
     const cacheDetail = await redisClient.get(`voucher:${_id}`);
     if (cacheDetail) {
@@ -336,12 +356,18 @@ const DetailVoucher = async (req, res) => {
         },
       },
     ]);
+
+    if (!vouchersWithDetails.length) {
+      return res.status(404).json({ message: "Voucher không tồn tại" });
+    }
+
     await redisClient.setEx(
       `voucher:${_id}`,
       3600,
-      JSON.stringify(vouchersWithDetails)
+      JSON.stringify(vouchersWithDetails[0])
     );
-    res.json(vouchersWithDetails);
+
+    res.json(vouchersWithDetails[0]);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -357,8 +383,7 @@ const updateVoucher = async (req, res) => {
         }),
       ExpiredTime: z.string(),
       Description: z.string().optional(),
-      Image: z.string().optional(),
-      RemainQuantity: z.number().min(0, "RemainQuantity phải lớn hơn 0"),
+      RemainQuantity: z.coerce.number().min(0, "RemainQuantity phải lớn hơn 0"),
     })
     .superRefine((data, ctx) => {
       const { ReleaseTime, ExpiredTime } = data;
@@ -375,7 +400,7 @@ const updateVoucher = async (req, res) => {
     await ensureRedisConnection();
     const { _id } = req.params;
     const validatedData = voucherSchema.parse(req.body);
-    const { ReleaseTime, ExpiredTime, Description, Image, RemainQuantity } =
+    const { ReleaseTime, ExpiredTime, Description, RemainQuantity } =
       validatedData;
 
     const voucher = await VoucherDB.findById(_id);
@@ -387,7 +412,6 @@ const updateVoucher = async (req, res) => {
     voucher.ReleaseTime = ReleaseTime;
     voucher.ExpiredTime = ExpiredTime;
     voucher.Description = Description;
-    voucher.Image = Image;
     voucher.RemainQuantity = RemainQuantity;
 
     await voucher.save();
@@ -458,6 +482,58 @@ const getVoucherByAdmin = async (req, res) => {
       JSON.stringify(vouchersWithDetails)
     );
     res.json(vouchersWithDetails);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const GetVoucherWithService = async (req, res) => {
+  try {
+    await ensureRedisConnection();
+    const { Service_ID } = req.params;
+    const partnerId = req.decoded?.partnerId;
+
+    if (!partnerId) {
+      return res.status(400).json({ message: "Partner ID is required" });
+    }
+
+    console.log("Service_ID:", Service_ID, "Partner_ID:", partnerId);
+
+    const cacheKey = `vouchers:${Service_ID}-${partnerId}`;
+    await redisClient.del(cacheKey);
+
+    const cachedVouchers = await redisClient.get(cacheKey);
+    if (cachedVouchers) {
+      return res.json(JSON.parse(cachedVouchers));
+    }
+
+    const voucherWithService = await VoucherDB.aggregate([
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "havevouchers",
+        },
+      },
+      {
+        $unwind: "$havevouchers",
+      },
+      {
+        $match: {
+          "havevouchers.Service_ID": Service_ID,
+          Partner_ID: partnerId,
+        },
+      },
+    ]);
+
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(voucherWithService));
+
+    if (voucherWithService.length === 0) {
+      return res.status(201).json({ message: "No vouchers found" });
+    }
+
+    res.json(voucherWithService);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -538,47 +614,39 @@ const updateState = async (req, res) => {
 //----------------------------------------updateContdition
 const updateCondition = async (req, res) => {
   const conditionSchema = z.object({
-    MinValue: z.number().min(0, "MinValue phải lớn hơn 0"),
-    MaxValue: z
-      .number()
-      .min(0, "MaxValue phải lớn hơn 0")
-      .superRefine((conditions, ctx) => {
-        conditions.forEach((condition, index) => {
-          if (condition.MaxValue >= condition.MinValue) {
-            ctx.addIssue({
-              path: ["Conditions", index, "MaxValue"],
-              message: "MaxValue phải nhỏ hơn MinValue",
-            });
-          }
-        });
-      }),
+    MinValue: z.coerce.number().min(0, "MinValue phải lớn hơn 0"),
+    MaxValue: z.coerce.number().min(0, "MaxValue phải lớn hơn 0"),
   });
 
   try {
-    await ensureRedisConnection();
     const { _id } = req.params;
-    const conditionNew = await ConditionDB.findById(_id);
+    const conditionToUpdate = await ConditionDB.findById(_id);
 
-    if (!conditionNew) {
-      return res.status(404).json({ message: "Condition not found" });
+    if (!conditionToUpdate) {
+      return res.status(400).json({ message: "Condition not found" });
     }
 
     const validatedCondition = conditionSchema.parse(req.body);
     const { MinValue, MaxValue } = validatedCondition;
 
-    conditionNew.MinValue = MinValue;
-    conditionNew.MaxValue = MaxValue;
+    conditionToUpdate.MinValue = MinValue;
+    conditionToUpdate.MaxValue = MaxValue;
 
-    await conditionNew.save();
+    await conditionToUpdate.save();
 
-    await redisClient.del(`condition:${_id}`);
-
-    res.json({
-      message: "Condition updated successfully",
-    });
+    res.json({ message: "Condition updated successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
+};
+
+const findcondition = async (req, res) => {
+  const { _id } = req.params;
+  const condition = await ConditionDB.findOne({ _id });
+  if (!condition) {
+    return res.status(404).json({ message: "Condition not found" });
+  }
+  res.json(condition);
 };
 
 module.exports = {
@@ -591,4 +659,6 @@ module.exports = {
   DetailVoucher,
   updateState,
   updateCondition,
+  GetVoucherWithService,
+  findcondition,
 };

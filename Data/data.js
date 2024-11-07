@@ -1,4 +1,4 @@
-const { MONGODB_URI } = require("../Middleware/config.js");
+const { MONGODB_URI } = require("../config/config.js");
 const mongoose = require("mongoose");
 
 mongoose
