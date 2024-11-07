@@ -425,27 +425,6 @@ const updateVoucher = async (req, res) => {
   }
 };
 
-//---------------------------------------------------------delete voucher
-const deleteVoucher = async (req, res) => {
-  try {
-    const { _id } = req.params;
-
-    const voucher = await VoucherDB.findById(_id);
-    await ensureRedisConnection();
-    await redisClient.del(`voucher:${voucher.Partner_ID}`);
-
-    if (!voucher) {
-      return res.status(404).json({ message: " VoucherDB not found" });
-    }
-    voucher.States = "deleted";
-    await voucher.save();
-    await redisClient.del(`voucher:${_id}`);
-    res.json({ message: " VoucherDB deleted successfully" });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
 //---------------------------------------get voucher by admin voucher lấy tất cả voucher để xem bởi admin
 const getVoucherByAdmin = async (req, res) => {
   try {
@@ -574,14 +553,41 @@ const getvoucherManagerbyPartner = async (req, res) => {
         },
       },
     ]);
+
+    // Update cache
     await redisClient.setEx(
       `vouchers:${Partner_ID}`,
       3600,
       JSON.stringify(voucher)
     );
+
     res.json(voucher);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteVoucher = async (req, res) => {
+  try {
+    const { _id } = req.params;
+
+    const voucher = await VoucherDB.findById(_id);
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher not found" });
+    }
+
+    await ensureRedisConnection();
+
+    await redisClient.del(`voucher:${_id}`);
+    await redisClient.del(`vouchers:${voucher.Partner_ID}`);
+
+    // Mark the voucher as deleted
+    voucher.status = "deleted";
+    await voucher.save();
+
+    res.json({ message: "Voucher deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 
