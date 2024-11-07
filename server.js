@@ -14,7 +14,7 @@ app.use((err, req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json("Welcome to Voucher-System");
+  res.status(200).json("Welcome to ServerVoucher4U");
 });
 
 app.use("/api", require("./Router/AccountRouter.js"));
