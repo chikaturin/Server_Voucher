@@ -535,7 +535,7 @@ const getvoucherManagerbyPartner = async (req, res) => {
     }
 
     const voucher = await VoucherDB.aggregate([
-      { $match: { Partner_ID: Partner_ID, status: { $ne: "deleted" } } },
+      { $match: { Partner_ID: Partner_ID, States: { $ne: "deleted" } } },
       {
         $lookup: {
           from: "conditions",
