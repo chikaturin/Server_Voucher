@@ -581,8 +581,7 @@ const deleteVoucher = async (req, res) => {
     await redisClient.del(`voucher:${_id}`);
     await redisClient.del(`vouchers:${voucher.Partner_ID}`);
 
-    // Mark the voucher as deleted
-    voucher.status = "deleted";
+    voucher.States = "deleted";
     await voucher.save();
 
     res.json({ message: "Voucher deleted successfully" });
