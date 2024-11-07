@@ -379,7 +379,7 @@ const updateVoucher = async (req, res) => {
       ReleaseTime: z
         .string()
         .refine((date) => new Date(date).getTime() < Date.now(), {
-          message: "ReleaseTime phải trước thời gian hiện tại",
+          message: "ReleaseTime phải sau thời gian hiện tại",
         }),
       ExpiredTime: z.string(),
       Description: z.string().optional(),
@@ -553,7 +553,7 @@ const getvoucherManagerbyPartner = async (req, res) => {
     }
 
     const voucher = await VoucherDB.aggregate([
-      { $match: { Partner_ID: Partner_ID } },
+      { $match: { Partner_ID: Partner_ID, status: { $ne: "deleted" } } },
       {
         $lookup: {
           from: "conditions",
