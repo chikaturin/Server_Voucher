@@ -367,7 +367,8 @@ const ApplyVoucher = async (req, res) => {
 
 const getVoucherByCus = async (req, res) => {
   try {
-    const { Service_ID, Partner_ID, Price, CusID } = req.body;
+    const CusID = req.decoded?.id;
+    const { Service_ID, Partner_ID, Price } = req.body;
     const numericPrice = Number(Price);
 
     const havevoucher = await HaveVoucher.find({ Service_ID });

@@ -18,7 +18,7 @@ const CheckToken = require("../Middleware/check.js").checktokken;
 
 router.post("/CalculateVoucher", CalculateVoucher);
 router.post("/ApplyVoucher/:_id", CheckToken, ApplyVoucher);
-router.post("/getVoucherByCus", getVoucherByCus);
+router.post("/getVoucherByCus", checktokken, getVoucherByCus);
 
 router.post("/ReceiveVoucher", CheckToken, ReceiveVoucher);
 router.post("/CheckVoucher", CheckToken, CheckVoucher);

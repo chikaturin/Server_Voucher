@@ -103,6 +103,7 @@ const Statistical_PartnerService = async (req, res) => {
   try {
     await ensureRedisConnection();
     const { Partner_ID } = req.decoded.partnerId;
+    await redisClient.del(`Statistical:${Partner_ID}`);
 
     const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
 
