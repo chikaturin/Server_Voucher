@@ -376,6 +376,7 @@ const ApplyVoucher = async (req, res) => {
     };
 
     await run(200, Infor);
+    console.log("Apply voucher successfully", Infor);
 
     res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
