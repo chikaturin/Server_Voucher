@@ -609,6 +609,11 @@ const updateState = async (req, res) => {
           voucher.ReleaseTime
         }<${new Date()}`,
       });
+    } else if (voucher.ExpiredTime < new Date()) {
+      voucher.States = "expired";
+      return res.status(400).json({
+        message: `You cann't update state, when ExpiredTime<${new Date()}`,
+      });
     } else {
       voucher.States = voucher.States === "enable" ? "disable" : "enable";
     }
@@ -664,29 +669,28 @@ cron.schedule("0 0 * * *", async () => {
     const now = new Date();
     console.log("Running cron job to check voucher states...");
 
-    const vouchersToUpdate = await Voucher.find({
+    const vouchersToUpdate = await VoucherDB.find({
       $or: [
         { ReleaseTime: { $lte: now }, ExpiredTime: { $gte: now } },
         { ExpiredTime: { $lte: now } },
       ],
     });
 
-    vouchersToUpdate.forEach(async (voucher) => {
+    for (const voucher of vouchersToUpdate) {
       const releaseTime = new Date(voucher.ReleaseTime);
-      if (releaseTime.toDateString() === now.toDateString()) {
-        voucher.States = "enabled";
-      }
-
       const expiredTime = new Date(voucher.ExpiredTime);
-      if (expiredTime.toDateString() === now.toDateString()) {
-        voucher.States = "disabled";
+
+      if (releaseTime >= now && expiredTime >= now) {
+        voucher.States = "enable";
+      } else if (expiredTime < now) {
+        voucher.States = "disable";
       }
 
       await voucher.save();
       console.log(
         `Voucher ${voucher._id} has been updated to ${voucher.States}`
       );
-    });
+    }
   } catch (error) {
     console.error("Error updating vouchers:", error);
   }

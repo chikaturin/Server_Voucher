@@ -74,6 +74,17 @@ const getService = async (req, res) => {
   }
 };
 
+const getServiceShotID = async (req, res) => {
+  try {
+    const { shortId } = req.params;
+    const response = await axios.get("https://sso.htilssu.id.vn/v1/services");
+    const service = response.find((service) => service.shortId === shortId);
+    res.json(service);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const getServiceID = async (req, res) => {
   try {
     const { _id } = req.params;
@@ -125,4 +136,5 @@ module.exports = {
   getPartner,
   createService,
   getServiceID,
+  getServiceShotID,
 };
