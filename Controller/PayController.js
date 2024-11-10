@@ -371,7 +371,7 @@ const ApplyVoucher = async (req, res) => {
       VoucherID: _id,
       VoucherName: voucherName.Name,
       Discount: TotalDiscount,
-      OrderID,
+      OrderID: OrderID,
       Price: Price - TotalDiscount,
     };
 
