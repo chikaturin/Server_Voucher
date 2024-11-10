@@ -78,9 +78,24 @@ const getServiceShotID = async (req, res) => {
   try {
     const { shortId } = req.params;
     const response = await axios.get("https://sso.htilssu.id.vn/v1/services");
-    const service = response.find((service) => service.shortId === shortId);
+
+    const services = response.data.data;
+
+    if (!Array.isArray(services)) {
+      return res
+        .status(500)
+        .json({ message: "Unexpected data format from API" });
+    }
+
+    const service = services.find((service) => service.shortId === shortId);
+
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
     res.json(service);
   } catch (error) {
+    console.error("Error fetching service:", error);
     res.status(500).json({ message: error.message });
   }
 };
