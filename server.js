@@ -14,7 +14,29 @@ app.use((err, req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json("Welcome to ServerVoucher4U");
+  const consumerKafka = new Kafka({
+    clientId: "my-consumer",
+    brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
+  });
+
+  const consumer = consumerKafka.consumer({ groupId: "my-group" });
+
+  const run = async () => {
+    await consumer.connect();
+    await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
+
+    await consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+        console.log({
+          partition,
+          offset: message.offset,
+          value: message.value.toString(),
+        });
+      },
+    });
+  };
+
+  run().catch(console.error);
 });
 
 app.use("/api", require("./Router/AccountRouter.js"));
@@ -26,27 +48,3 @@ app.use("/api", require("./Router/StatisticalRouter.js"));
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-const consumerKafka = new Kafka({
-  clientId: "my-consumer",
-  brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
-});
-
-const consumer = consumerKafka.consumer({ groupId: "my-group" });
-
-const run = async () => {
-  await consumer.connect();
-  await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
-
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
-      console.log({
-        partition,
-        offset: message.offset,
-        value: message.value.toString(),
-      });
-    },
-  });
-};
-
-run().catch(console.error);
