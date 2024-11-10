@@ -8,68 +8,71 @@ const ensureRedisConnection = async () => {
   }
 };
 
-const createHistory = async (req, res) => {
-  try {
-    const { Voucher_ID, CusID, TotalDiscount, Date } = req.body;
+// //xoá
+// const createHistory = async (req, res) => {
+//   try {
+//     const { Voucher_ID, CusID, TotalDiscount, Date } = req.body;
 
-    let historyCounter = await CounterHistoryDB.findOneAndUpdate(
-      { _id: "Statistical" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
+//     let historyCounter = await CounterHistoryDB.findOneAndUpdate(
+//       { _id: "Statistical" },
+//       { $inc: { seq: 1 } },
+//       { new: true, upsert: true }
+//     );
 
-    const _id = `HIS${historyCounter.seq}`;
-    const history = new HistoryDB({
-      _id,
-      Voucher_ID,
-      CusID,
-      TotalDiscount,
-      Date,
-    });
-    await history.save();
+//     const _id = `HIS${historyCounter.seq}`;
+//     const history = new HistoryDB({
+//       _id,
+//       Voucher_ID,
+//       CusID,
+//       TotalDiscount,
+//       Date,
+//     });
+//     await history.save();
 
-    res.status(201).json({ message: "History created successfully", _id });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+//     res.status(201).json({ message: "History created successfully", _id });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
 
-const Statistical_Voucher = async (req, res) => {
-  await ensureRedisConnection();
-  const cacheKey = "Statistical_Voucher";
-  const cacheStatistical = await redisClient.get(cacheKey);
-  if (cache) {
-    return res.status(200).json(JSON.parse(cacheStatistical));
-  }
-  const history = await HistoryDB.find();
-  if (!history) {
-    return res.status(404).json({ message: "History not found" });
-  }
-  await redisClient.set(cacheKey, JSON.stringify(history));
-  res.json(history);
-};
+// //xoá
+// const Statistical_Voucher = async (req, res) => {
+//   await ensureRedisConnection();
+//   const cacheKey = "Statistical_Voucher";
+//   const cacheStatistical = await redisClient.get(cacheKey);
+//   if (cacheStatistical) {
+//     return res.status(200).json(JSON.parse(cacheStatistical));
+//   }
+//   const history = await HistoryDB.find();
+//   if (!history) {
+//     return res.status(404).json({ message: "History not found" });
+//   }
+//   await redisClient.set(cacheKey, JSON.stringify(history));
+//   res.json(history);
+// };
 
-const HistoryCus = async (req, res) => {
-  await ensureRedisConnection();
-  const { CusID } = req.decoded._id;
-  const cacheKey = `HistoryCus_${CusID}`;
-  const cacheHistory = await redisClient.get(cacheKey);
-  if (cacheHistory) {
-    return res.status(200).json(JSON.parse(cacheHistory));
-  }
+// //xoá
+// const HistoryCus = async (req, res) => {
+//   await ensureRedisConnection();
+//   const { CusID } = req.decoded._id;
+//   const cacheKey = `HistoryCus_${CusID}`;
+//   const cacheHistory = await redisClient.get(cacheKey);
+//   if (cacheHistory) {
+//     return res.status(200).json(JSON.parse(cacheHistory));
+//   }
 
-  const history = await HistoryDB.find({ CusID });
-  if (!history) {
-    return res.status(404).json({ message: "History not found" });
-  }
-  await redisClient.set(cacheKey, JSON.stringify(history));
-  res.json(history);
-};
+//   const history = await HistoryDB.find({ CusID });
+//   if (!history) {
+//     return res.status(404).json({ message: "History not found" });
+//   }
+//   await redisClient.set(cacheKey, JSON.stringify(history));
+//   res.json(history);
+// };
 
-const Statistical_VoucherFindPartner_Service = async (req, res) => {
+const Statistical_VoucherAdmin = async (req, res) => {
   try {
     await ensureRedisConnection();
-    const cacheKey = "Statistical_VoucherFindPartner_Service";
+    const cacheKey = "Statistical_VoucherAdmin";
     const cacheStatistical = await redisClient.get(cacheKey);
     if (cacheStatistical) {
       return res.status(200).json(JSON.parse(cacheStatistical));
@@ -102,19 +105,17 @@ const Statistical_VoucherFindPartner_Service = async (req, res) => {
 const Statistical_PartnerService = async (req, res) => {
   try {
     await ensureRedisConnection();
-    const { Partner_ID } = req.decoded.partnerId;
-    await redisClient.del(`Statistical:${Partner_ID}`);
 
+    const Partner_ID = req.decoded?.partnerId;
+    if (!Partner_ID) {
+      return res.status(400).json({ message: "Missing Partner_ID" });
+    }
     const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
 
     if (cacheStatistical) {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
-
     const Statistical = await HistoryDB.aggregate([
-      {
-        $match: { Partner_ID },
-      },
       {
         $lookup: {
           from: "vouchers",
@@ -131,6 +132,11 @@ const Statistical_PartnerService = async (req, res) => {
           as: "haveVouchers",
         },
       },
+      {
+        $match: {
+          "vouchers.Partner_ID": Partner_ID,
+        },
+      },
     ]);
 
     await redisClient.setEx(
@@ -141,7 +147,7 @@ const Statistical_PartnerService = async (req, res) => {
 
     res.status(200).json(Statistical);
   } catch (error) {
-    console.error(error);
+    console.error("Error in Statistical_PartnerService:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -172,11 +178,11 @@ const StatisticalSort = async (req, res) => {
   }
 };
 
+// createHistory,
+// Statistical_Voucher,
+// HistoryCus,
 module.exports = {
-  createHistory,
-  Statistical_Voucher,
   Statistical_PartnerService,
   StatisticalSort,
-  Statistical_VoucherFindPartner_Service,
-  HistoryCus,
+  Statistical_VoucherAdmin,
 };

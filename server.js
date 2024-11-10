@@ -6,7 +6,7 @@ const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
-const PORT = 3000;
+const PORT = 3001;
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -27,26 +27,26 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-// const consumerKafka = new Kafka({
-//   clientId: "my-consumer",
-//   brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
-// });
+const consumerKafka = new Kafka({
+  clientId: "my-consumer",
+  brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
+});
 
-// const consumer = consumerKafka.consumer({ groupId: "my-group" });
+const consumer = consumerKafka.consumer({ groupId: "my-group" });
 
-// const run = async () => {
-//   await consumer.connect();
-//   await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
+const run = async () => {
+  await consumer.connect();
+  await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
 
-//   await consumer.run({
-//     eachMessage: async ({ topic, partition, message }) => {
-//       console.log({
-//         partition,
-//         offset: message.offset,
-//         value: message.value.toString(),
-//       });
-//     },
-//   });
-// };
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      console.log({
+        partition,
+        offset: message.offset,
+        value: message.value.toString(),
+      });
+    },
+  });
+};
 
-// run().catch(console.error);
+run().catch(console.error);

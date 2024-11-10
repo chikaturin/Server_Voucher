@@ -57,6 +57,36 @@ const run = async (status, infor) => {
   await producer.disconnect();
 };
 
+const consumer = kafka.consumer({ groupId: "my-consumer" });
+
+const runconsumer = async (Voucher_ID, CusID, TotalDiscount) => {
+  await consumer.connect();
+  await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
+
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      if (message.value.toString() === "Success") {
+        const counterID = await CounterHistory.findOneAndUpdate(
+          { _id: "Statistical" },
+          { $inc: { seq: 1 } },
+          { new: true, upsert: true }
+        );
+        const _idhis = `HIS${counterID.seq}`;
+
+        const history = new History({
+          _id: _idhis,
+          Voucher_ID,
+          CusID,
+          TotalDiscount,
+          Date: new Date(),
+        });
+        await history.save();
+        console.log(`Saved history with ID: ${_idhis}`);
+      }
+    },
+  });
+};
+
 const CalculateVoucher = async (req, res) => {
   try {
     const { _id, Price } = req.body;
@@ -74,31 +104,34 @@ const CalculateVoucher = async (req, res) => {
         .json({ message: "No conditions found for this voucher" });
     }
 
-    let max = 0;
+    let max = -Infinity;
     let selectedCondition = null;
 
     for (const condition of conditions) {
-      if (condition.MinValue > max && condition.MinValue <= Price) {
+      if (condition.MinValue <= Price && condition.MinValue > max) {
         max = condition.MinValue;
         selectedCondition = condition;
       }
     }
+
+    const VoucherID = selectedCondition.Voucher_ID;
+    const PercentDiscount = await Voucher.findOne({ _id: VoucherID });
 
     if (!selectedCondition) {
       return res.status(404).json({ message: "No applicable condition found" });
     }
 
     let priceDiscount = 0;
-    const discount = (selectedCondition.PercentDiscount * Price) / 100;
+    let discount = (PercentDiscount.PercentDiscount * Price) / 100;
 
-    if (discount < selectedCondition.MaxValue) {
+    if (discount <= selectedCondition.MaxValue) {
       priceDiscount = discount;
     } else {
       priceDiscount = selectedCondition.MaxValue;
     }
-
     res.status(200).json(priceDiscount);
   } catch (error) {
+    console.error("Error calculating voucher:", error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -169,7 +202,7 @@ const CheckVoucher = async (req, res) => {
       {
         $match: {
           _id: { $in: voucherIDs },
-          States: "enable",
+          States: "Enable",
           Partner_ID: null,
         },
       },
@@ -325,28 +358,14 @@ const ApplyVoucher = async (req, res) => {
 
       if (voucher.RemainQuantity < 1) {
         await run(400, "FAILED");
-        await Voucher.findByIdAndUpdate(_id, { $set: { States: "disable" } });
+        await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
         return res
           .status(400)
           .json({ message: "Voucher quantity is insufficient" });
       }
     }
 
-    const counterID = await CounterHistory.findOneAndUpdate(
-      { _id: "Statistical" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-    const _idhis = `HIS${counterID.seq}`;
-
-    const history = new History({
-      _id: _idhis,
-      Voucher_ID: _id,
-      CusID,
-      TotalDiscount,
-      Date: new Date(),
-    });
-    await history.save();
+    runconsumer(_id, CusID, TotalDiscount).catch(console.error);
 
     const Infor = {
       VoucherID: _id,
@@ -358,7 +377,7 @@ const ApplyVoucher = async (req, res) => {
 
     await run(200, Infor);
 
-    res.status(200).json(history);
+    res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
     await run(400, "FAILED");
     res.status(400).json({ message: error.message });
@@ -408,7 +427,7 @@ const getVoucherByCus = async (req, res) => {
       {
         $match: {
           _id: { $in: voucherIDs },
-          States: "enable",
+          States: "Enable",
           $or: [{ Partner_ID: Partner_ID }, { Partner_ID: null }],
           MinCondition: { $lte: numericPrice },
         },
