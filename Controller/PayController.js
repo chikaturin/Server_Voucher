@@ -372,7 +372,7 @@ const ApplyVoucher = async (req, res) => {
       VoucherName: voucherName.Name,
       Discount: TotalDiscount,
       OrderID,
-      Price,
+      Price: Price - TotalDiscount,
     };
 
     await run(200, Infor);
