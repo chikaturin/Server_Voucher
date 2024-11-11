@@ -83,11 +83,6 @@ const createVoucherbyAdmin = async (req, res) => {
     const States =
       new Date(ReleaseTime).getTime() === Date.now() ? "Enable" : "Disable";
 
-    const reply = await redisClient.get(`createvoucher:${_id}`);
-    if (reply) {
-      return res.status(400).json({ message: "Voucher đã tồn tại" });
-    }
-
     let min = Conditions[0].MinValue;
 
     if (!req.file) {
@@ -117,8 +112,13 @@ const createVoucherbyAdmin = async (req, res) => {
       MinCondition: min,
     });
 
+    const reply = await redisClient.get(`createvoucher:${_id}`);
+    if (reply) {
+      return res.status(400).json({ message: "Voucher đã tồn tại" });
+    }
+
     await voucher.save();
-    await redisClient.del(`vouchers:admin`);
+    numredis = Math.floor(Math.random() * 100);
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -229,11 +229,6 @@ const createVoucherbyPartner = async (req, res) => {
         .json({ success: false, message: "Vui lòng tải lên hình ảnh." });
     }
 
-    const reply = await redisClient.get(`createvoucher:${_id}`);
-    if (reply) {
-      return res.status(400).json({ message: "Voucher đã tồn tại" });
-    }
-
     const imageUrl = req.file.path;
     const validatedData = voucherSchema.parse(req.body);
     const {
@@ -283,9 +278,13 @@ const createVoucherbyPartner = async (req, res) => {
       MinCondition: min,
     });
 
+    const reply = await redisClient.get(`createvoucher:${_id}`);
+    if (reply) {
+      return res.status(400).json({ message: "Voucher đã tồn tại" });
+    }
+
     await voucher.save();
-    await redisClient.del(`vouchers:${Partner_ID}`);
-    await redisClient.del(`vouchers:admin`);
+    numredis = Math.floor(Math.random() * 100);
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -440,10 +439,8 @@ const updateVoucher = async (req, res) => {
     voucher.Description = Description;
     voucher.RemainQuantity = RemainQuantity;
 
-    console.log("numredis", numredis);
     numredis = Math.floor(Math.random() * 100);
     await voucher.save();
-    console.log("Voucher updated successfully", numredis);
 
     res.json({
       message: "Voucher updated successfully",
@@ -671,10 +668,8 @@ const updateCondition = async (req, res) => {
     conditionToUpdate.MinValue = MinValue;
     conditionToUpdate.MaxValue = MaxValue;
 
-    console.log("numredis condition", numredis);
     numredis = Math.floor(Math.random() * 100);
     await conditionToUpdate.save();
-    console.log("Condition updated successfully", numredis);
     res.json({ message: "Condition updated successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
