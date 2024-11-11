@@ -6,7 +6,7 @@ const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
-const PORT = 3001;
+const PORT = 3002;
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -15,7 +15,6 @@ app.use((err, req, res, next) => {
 
 app.get("/", (req, res) => {
   res.status(200).json("Welcome to ServerVoucher4U");
-  run().catch(console.error);
 });
 
 app.use("/api", require("./Router/AccountRouter.js"));
@@ -49,3 +48,5 @@ const run = async () => {
     },
   });
 };
+
+run().catch(console.error);
