@@ -16,6 +16,8 @@ const date = (a) => {
   });
 };
 
+let numredis = Math.floor(Math.random() * 100);
+
 const ensureRedisConnection = async () => {
   if (!redisClient.isOpen) {
     await redisClient.connect();
@@ -81,7 +83,7 @@ const createVoucherbyAdmin = async (req, res) => {
     const States =
       new Date(ReleaseTime).getTime() === Date.now() ? "Enable" : "Disable";
 
-    const reply = await redisClient.get(`voucher:${_id}`);
+    const reply = await redisClient.get(`createvoucher:${_id}`);
     if (reply) {
       return res.status(400).json({ message: "Voucher đã tồn tại" });
     }
@@ -163,7 +165,11 @@ const createVoucherbyAdmin = async (req, res) => {
       await newCondition.save();
     }
 
-    await redisClient.setEx(`voucher:${_id}`, 3600, JSON.stringify(voucher));
+    await redisClient.setEx(
+      `createvoucher:${_id}`,
+      3600,
+      JSON.stringify(voucher)
+    );
 
     res.status(201).json({
       message: "Voucher và các điều kiện đã được tạo thành công",
@@ -222,6 +228,12 @@ const createVoucherbyPartner = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Vui lòng tải lên hình ảnh." });
     }
+
+    const reply = await redisClient.get(`createvoucher:${_id}`);
+    if (reply) {
+      return res.status(400).json({ message: "Voucher đã tồn tại" });
+    }
+
     const imageUrl = req.file.path;
     const validatedData = voucherSchema.parse(req.body);
     const {
@@ -240,32 +252,26 @@ const createVoucherbyPartner = async (req, res) => {
     const States =
       new Date(ReleaseTime).getTime() === Date.now() ? "Enable" : "Disable";
 
-    const partner_ID = req.decoded?.partnerId;
-    if (!partner_ID) {
+    const Partner_ID = req.decoded?.partnerId;
+    if (!Partner_ID) {
       return res.status(400).json({ message: "Không tìm thấy partner_ID" });
     }
 
     const partner =
-      (await PartnerDB.findById(partner_ID)) ||
+      (await PartnerDB.findById(Partner_ID)) ||
       new PartnerDB({
-        _id: partner_ID,
+        _id: Partner_ID,
         Mail: req.decoded?.email,
       });
 
     await partner.save();
-    await redisClient.del(`vouchers:${partner_ID}`);
-
-    const reply = await redisClient.get(`voucher:${_id}`);
-    if (reply) {
-      return res.status(400).json({ message: "Voucher đã tồn tại" });
-    }
 
     let min = Conditions[0].MinValue;
 
     const voucher = new VoucherDB({
       _id,
       Name,
-      Partner_ID: partner_ID,
+      Partner_ID,
       ReleaseTime,
       ExpiredTime,
       Description,
@@ -278,8 +284,9 @@ const createVoucherbyPartner = async (req, res) => {
     });
 
     await voucher.save();
-    await redisClient.del(`vouchers:${partner_ID}`);
+    await redisClient.del(`vouchers:${Partner_ID}`);
     await redisClient.del(`vouchers:admin`);
+
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
       const counterHaveVoucher = await CounterHaveVoucher.findOneAndUpdate(
@@ -319,7 +326,11 @@ const createVoucherbyPartner = async (req, res) => {
       await newCondition.save();
     }
 
-    await redisClient.setEx(`voucher:${_id}`, 3600, JSON.stringify(voucher));
+    await redisClient.setEx(
+      `createvoucher:${_id}`,
+      3600,
+      JSON.stringify(voucher)
+    );
 
     res.status(201).json({
       message: "Voucher và các điều kiện đã được tạo thành công",
@@ -335,8 +346,7 @@ const DetailVoucher = async (req, res) => {
   try {
     await ensureRedisConnection();
     const { _id } = req.params;
-
-    const cacheDetail = await redisClient.get(`voucher:${_id}`);
+    const cacheDetail = await redisClient.get(`voucher:${_id}:${numredis}`);
     if (cacheDetail) {
       return res.json(JSON.parse(cacheDetail));
     }
@@ -368,7 +378,7 @@ const DetailVoucher = async (req, res) => {
     }
 
     await redisClient.setEx(
-      `voucher:${_id}`,
+      `voucher:${_id}:${numredis}`,
       3600,
       JSON.stringify(vouchersWithDetails[0])
     );
@@ -382,6 +392,10 @@ const DetailVoucher = async (req, res) => {
 const updateVoucher = async (req, res) => {
   const voucherSchema = z
     .object({
+      PercentDiscount: z.coerce
+        .number()
+        .min(0, "PercentDiscount phải lớn hơn 0")
+        .max(100, "PercentDiscount không được vượt quá 100"),
       ReleaseTime: z
         .string()
         .refine((date) => new Date(date).getTime() > Date.now(), {
@@ -406,8 +420,13 @@ const updateVoucher = async (req, res) => {
     await ensureRedisConnection();
     const { _id } = req.params;
     const validatedData = voucherSchema.parse(req.body);
-    const { ReleaseTime, ExpiredTime, Description, RemainQuantity } =
-      validatedData;
+    const {
+      ReleaseTime,
+      ExpiredTime,
+      Description,
+      RemainQuantity,
+      PercentDiscount,
+    } = validatedData;
 
     const voucher = await VoucherDB.findById(_id);
 
@@ -415,17 +434,19 @@ const updateVoucher = async (req, res) => {
       return res.status(404).json({ message: "Voucher not found" });
     }
 
+    voucher.PercentDiscount = PercentDiscount;
     voucher.ReleaseTime = ReleaseTime;
     voucher.ExpiredTime = ExpiredTime;
     voucher.Description = Description;
     voucher.RemainQuantity = RemainQuantity;
 
+    console.log("numredis", numredis);
+    numredis = Math.floor(Math.random() * 100);
     await voucher.save();
-    await redisClient.del(`voucher:${_id}`);
-    await redisClient.del(`vouchers:${voucher.Partner_ID}`);
+    console.log("Voucher updated successfully", numredis);
 
     res.json({
-      message: "Voucher updated successfully and conditions are updated",
+      message: "Voucher updated successfully",
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -436,7 +457,7 @@ const updateVoucher = async (req, res) => {
 const getVoucherByAdmin = async (req, res) => {
   try {
     await ensureRedisConnection();
-    const cacheKey = "vouchers:admin";
+    const cacheKey = `vouchers:admin:${numredis}`;
 
     const cachedVouchers = await redisClient.get(cacheKey);
     if (cachedVouchers) {
@@ -486,7 +507,7 @@ const GetVoucherWithService = async (req, res) => {
       return res.status(400).json({ message: "Partner ID is required" });
     }
 
-    const cacheKey = `vouchers:${Service_ID}-${partnerId}`;
+    const cacheKey = `vouchers:${Service_ID}:${partnerId}:${numredis}`;
 
     const cachedVouchers = await redisClient.get(cacheKey);
     if (cachedVouchers) {
@@ -531,7 +552,9 @@ const getvoucherManagerbyPartner = async (req, res) => {
     await ensureRedisConnection();
     const Partner_ID = req.decoded?.partnerId;
 
-    const cachedVouchers = await redisClient.get(`vouchers:${Partner_ID}`);
+    const cachedVouchers = await redisClient.get(
+      `vouchers:${Partner_ID}:${numredis}`
+    );
     if (cachedVouchers) {
       return res.json(JSON.parse(cachedVouchers));
     }
@@ -556,9 +579,8 @@ const getvoucherManagerbyPartner = async (req, res) => {
       },
     ]);
 
-    // Update cache
     await redisClient.setEx(
-      `vouchers:${Partner_ID}`,
+      `vouchers:${Partner_ID}:${numredis}`,
       3600,
       JSON.stringify(voucher)
     );
@@ -580,8 +602,7 @@ const deleteVoucher = async (req, res) => {
 
     await ensureRedisConnection();
 
-    await redisClient.del(`voucher:${_id}`);
-    await redisClient.del(`vouchers:${voucher.Partner_ID}`);
+    numredis = Math.floor(Math.random() * 100);
 
     voucher.States = "deleted";
     await voucher.save();
@@ -606,9 +627,9 @@ const updateState = async (req, res) => {
     if (voucher.RemainQuantity == 0 || voucher.ReleaseTime > new Date()) {
       voucher.States = "Disable";
       return res.status(400).json({
-        message: `You cann't update state, when RemainQuantity=0 or ${
+        message: `You cann't update state, when RemainQuantity=0 or ${date(
           voucher.ReleaseTime
-        }<${date(new Date())}`,
+        )}<${date(new Date())}`,
       });
     } else if (voucher.ExpiredTime < new Date()) {
       voucher.States = "expired";
@@ -621,8 +642,8 @@ const updateState = async (req, res) => {
       voucher.States = voucher.States === "Enable" ? "Disable" : "Enable";
     }
     await voucher.save();
-    await redisClient.del(`voucher:${voucher.Partner_ID}`);
-    await redisClient.del(`vouchers:admin`);
+
+    numredis = Math.floor(Math.random() * 100);
 
     res.status(200).json({ message: "State updated successfully" });
   } catch (error) {
@@ -650,8 +671,10 @@ const updateCondition = async (req, res) => {
     conditionToUpdate.MinValue = MinValue;
     conditionToUpdate.MaxValue = MaxValue;
 
+    console.log("numredis condition", numredis);
+    numredis = Math.floor(Math.random() * 100);
     await conditionToUpdate.save();
-
+    console.log("Condition updated successfully", numredis);
     res.json({ message: "Condition updated successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -697,6 +720,7 @@ cron.schedule("0 0 * * *", async () => {
       console.log(
         `Voucher ${voucher._id} has been updated to ${voucher.States}`
       );
+      numredis = Math.floor(Math.random() * 100);
     }
   } catch (error) {
     console.error("Error updating vouchers:", error);

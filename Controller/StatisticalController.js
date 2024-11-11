@@ -8,6 +8,8 @@ const ensureRedisConnection = async () => {
   }
 };
 
+let timeredis;
+
 // //xoá
 // const createHistory = async (req, res) => {
 //   try {
@@ -37,7 +39,13 @@ const ensureRedisConnection = async () => {
 
 const Statistical_ID = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
+    const key = `Statistical_ID:${_id}`;
+    const cacheStatistical = await redisClient.get(key);
+    if (cacheStatistical) {
+      return res.status(200).json(JSON.parse(cacheStatistical));
+    }
     const history = await HistoryDB.aggregate([
       { $match: { _id } },
       {
@@ -61,6 +69,9 @@ const Statistical_ID = async (req, res) => {
     if (!history) {
       return res.status(404).json({ message: "History not found" });
     }
+
+    await redisClient.set(key, JSON.stringify(history));
+
     res.json(history);
   } catch (error) {
     res.status(400).json({ message: error.message });
