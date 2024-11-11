@@ -5,6 +5,7 @@ const {
   // createHistory,
   // Statistical_Voucher,
   // HistoryCus,
+  Statistical_ID,
   Statistical_PartnerService,
   StatisticalSort,
   Statistical_VoucherAdmin,
@@ -15,6 +16,8 @@ const checktokken = require("../Middleware/check.js").checktokken;
 // router.post("/createHistory", createHistory);
 // router.get("/Statistical_Voucher", Statistical_Voucher);
 // router.get("/HistoryCus", checktokken, HistoryCus);
+
+router.get("/Statistical_ID", Statistical_ID);
 
 router.get(
   "/Statistical_PartnerService",

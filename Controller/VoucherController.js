@@ -116,6 +116,7 @@ const createVoucherbyAdmin = async (req, res) => {
     });
 
     await voucher.save();
+    await redisClient.del(`vouchers:admin`);
 
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
@@ -252,6 +253,7 @@ const createVoucherbyPartner = async (req, res) => {
       });
 
     await partner.save();
+    await redisClient.del(`vouchers:${partner_ID}`);
 
     const reply = await redisClient.get(`voucher:${_id}`);
     if (reply) {
@@ -276,7 +278,8 @@ const createVoucherbyPartner = async (req, res) => {
     });
 
     await voucher.save();
-
+    await redisClient.del(`vouchers:${partner_ID}`);
+    await redisClient.del(`vouchers:admin`);
     for (const haveVoucher of HaveVouchers) {
       const { Service_ID } = haveVoucher;
       const counterHaveVoucher = await CounterHaveVoucher.findOneAndUpdate(

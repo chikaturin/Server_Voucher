@@ -35,21 +35,37 @@ const ensureRedisConnection = async () => {
 //   }
 // };
 
-// //xoá
-// const Statistical_Voucher = async (req, res) => {
-//   await ensureRedisConnection();
-//   const cacheKey = "Statistical_Voucher";
-//   const cacheStatistical = await redisClient.get(cacheKey);
-//   if (cacheStatistical) {
-//     return res.status(200).json(JSON.parse(cacheStatistical));
-//   }
-//   const history = await HistoryDB.find();
-//   if (!history) {
-//     return res.status(404).json({ message: "History not found" });
-//   }
-//   await redisClient.set(cacheKey, JSON.stringify(history));
-//   res.json(history);
-// };
+const Statistical_ID = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const history = await HistoryDB.aggregate([
+      { $match: { _id } },
+      {
+        $lookup: {
+          from: "vouchers",
+          localField: "Voucher_ID",
+          foreignField: "_id",
+          as: "vouchers",
+        },
+      },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "Voucher_ID",
+          foreignField: "Voucher_ID",
+          as: "haveVouchers",
+        },
+      },
+    ]);
+
+    if (!history) {
+      return res.status(404).json({ message: "History not found" });
+    }
+    res.json(history);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 // //xoá
 // const HistoryCus = async (req, res) => {
@@ -182,6 +198,7 @@ const StatisticalSort = async (req, res) => {
 // Statistical_Voucher,
 // HistoryCus,
 module.exports = {
+  Statistical_ID,
   Statistical_PartnerService,
   StatisticalSort,
   Statistical_VoucherAdmin,
