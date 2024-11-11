@@ -17,7 +17,7 @@ const checktokken = require("../Middleware/check.js").checktokken;
 // router.get("/Statistical_Voucher", Statistical_Voucher);
 // router.get("/HistoryCus", checktokken, HistoryCus);
 
-router.get("/Statistical_ID", Statistical_ID);
+router.get("/Statistical_ID/:_id", Statistical_ID);
 
 router.get(
   "/Statistical_PartnerService",

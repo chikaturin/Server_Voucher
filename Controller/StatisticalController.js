@@ -47,7 +47,7 @@ const Statistical_ID = async (req, res) => {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
     const history = await HistoryDB.aggregate([
-      { $match: { _id } },
+      { $match: { Voucher_ID: _id } },
       {
         $lookup: {
           from: "vouchers",
@@ -70,7 +70,7 @@ const Statistical_ID = async (req, res) => {
       return res.status(404).json({ message: "History not found" });
     }
 
-    await redisClient.set(key, JSON.stringify(history));
+    await redisClient.set(key, JSON.stringify(history), "EX", 3600);
 
     res.json(history);
   } catch (error) {
