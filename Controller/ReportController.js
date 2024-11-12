@@ -3,6 +3,12 @@ const CounterReport = require("../Schema/schema").counterReport;
 const { z } = require("zod");
 const redisClient = require("../Middleware/redisClient");
 
+const ensureRedisConnection = async () => {
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+};
+
 const CreateReport = async (req, res) => {
   const ReportSchema = z.object({
     Content: z.string().min(1, "Content is required"),
@@ -51,6 +57,7 @@ const deleteReportVoucher = async (req, res) => {
 
 const getReport = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const cacheKey = "ReportVoucher";
     const cacheReport = await redisClient.get(cacheKey);
     if (cacheReport) {
