@@ -15,7 +15,7 @@ const { checktokken, ReadToken } = require("../Middleware/check.js");
 router.post("/register", register);
 router.post("/signIn", signIn);
 
-router.get("/getService", getService);
+router.get("/getServices", getService);
 router.get("/getServiceID/:_id", getServiceID);
 router.get("/getPartner", getPartner);
 router.post("/createService", createService);

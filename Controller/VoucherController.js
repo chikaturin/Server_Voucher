@@ -66,6 +66,13 @@ const createVoucherbyAdmin = async (req, res) => {
 
   try {
     await ensureRedisConnection();
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Vui lòng tải lên hình ảnh." });
+    }
+
+    const imageUrl = req.file.path;
     const validatedData = voucherSchema.parse(req.body);
     const {
       _id,
@@ -84,19 +91,6 @@ const createVoucherbyAdmin = async (req, res) => {
       new Date(ReleaseTime).getTime() === Date.now() ? "Enable" : "Disable";
 
     let min = Conditions[0].MinValue;
-
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Vui lòng tải lên hình ảnh." });
-    }
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ message: "File hình ảnh không được tải lên" });
-    }
-
-    const imageUrl = req.file.path;
 
     const voucher = new VoucherDB({
       _id,
@@ -138,12 +132,6 @@ const createVoucherbyAdmin = async (req, res) => {
 
     for (const condition of Conditions) {
       const { MinValue, MaxValue } = condition;
-
-      if (MaxValue > MinValue) {
-        return res.status(400).json({
-          message: "MaxDiscount phải nhỏ hơn MinValue",
-        });
-      }
 
       if (min > MinValue) {
         min = MinValue;
@@ -438,6 +426,7 @@ const updateVoucher = async (req, res) => {
     voucher.ExpiredTime = ExpiredTime;
     voucher.Description = Description;
     voucher.RemainQuantity = RemainQuantity;
+    voucher.States = "Disable";
 
     numredis = Math.floor(Math.random() * 100);
     await voucher.save();
