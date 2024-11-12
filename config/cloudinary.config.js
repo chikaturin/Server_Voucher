@@ -13,6 +13,8 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "Voucher",
+    format: "jpg",
+    transformation: [{ format: "jpg" }],
     allowed_formats: ["jpg", "png"],
   },
 });
