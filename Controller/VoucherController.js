@@ -716,6 +716,42 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
+const VoucherWithDate = async (req, res) => {
+  try {
+    const now = removeTimeFromDate(new Date());
+    console.log("Running cron job to check voucher states...");
+
+    const vouchersToUpdate = await VoucherDB.find();
+
+    console.log(`Found ${vouchersToUpdate.length} vouchers to update`);
+
+    for (const voucher of vouchersToUpdate) {
+      const releaseTime = removeTimeFromDate(voucher.ReleaseTime);
+      const expiredTime = removeTimeFromDate(voucher.ExpiredTime);
+
+      if (
+        releaseTime <= now &&
+        expiredTime >= now &&
+        voucher.RemainQuantity > 0
+      ) {
+        voucher.States = "Enable";
+        console.log(`Voucher ${voucher._id} set to Enable`);
+      } else if (expiredTime <= now) {
+        voucher.States = "Disable";
+        console.log(`Voucher ${voucher._id} set to Disable`);
+      }
+
+      await voucher.save();
+      console.log(
+        `Voucher ${voucher._id} has been updated to ${voucher.States}`
+      );
+    }
+    console.log("VoucherDB updated successfully");
+  } catch (error) {
+    console.error("Error updating vouchers:", error);
+  }
+};
+
 module.exports = {
   createVoucherbyAdmin,
   createVoucherbyPartner,
@@ -728,4 +764,5 @@ module.exports = {
   updateCondition,
   GetVoucherWithService,
   findcondition,
+  VoucherWithDate,
 };

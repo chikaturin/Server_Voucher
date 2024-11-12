@@ -14,6 +14,7 @@ const {
   updateCondition,
   GetVoucherWithService,
   findcondition,
+  VoucherWithDate,
 } = require("../Controller/VoucherController.js");
 
 const { checktokken } = require("../Middleware/check.js");
@@ -52,5 +53,7 @@ router.get("/deleteVoucher/:_id", deleteVoucher);
 router.put("/updateCondition/:_id", updateCondition);
 
 router.get("/findcondition/:_id", findcondition);
+
+router.get("/VoucherWithDate", VoucherWithDate);
 
 module.exports = router;

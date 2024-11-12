@@ -1,0 +1,45 @@
+name: Call Vercel Cron Endpoint
+
+on:
+  schedule:
+    - cron: "43 0 * * *"
+
+jobs:
+  call-cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.12.1"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Call Vercel Cron API
+        run: |
+          node -e "
+            const fetch = require('node-fetch');  // Sử dụng fetch để gọi API
+            const callCronApi = async () => {
+              try {
+                const response = await fetch('https://server-voucher.vercel.app/api/VoucherWithDate', {
+                  method: 'GET',  
+                  headers: {
+                    'Content-Type': 'application/json',  
+                  },
+                });
+                const data = await response.json();  
+                if (response.ok) {
+                  console.log('Cron job executed successfully:', data); 
+                } else {
+                  console.error('Failed to execute cron job:', data);  
+                }
+              } catch (error) {
+                console.error('Error calling API:', error);  
+              }
+            };
+            callCronApi();  
+          "
