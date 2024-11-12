@@ -746,7 +746,7 @@ const VoucherWithDate = async (req, res) => {
         `Voucher ${voucher._id} has been updated to ${voucher.States}`
       );
     }
-    console.log("VoucherDB updated successfully");
+    return res.status(200).json("VoucherDB updated successfully");
   } catch (error) {
     console.error("Error updating vouchers:", error);
   }
