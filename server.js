@@ -49,4 +49,4 @@ const run = async () => {
   });
 };
 
-run().catch(console.error);
+// run().catch(console.error);
