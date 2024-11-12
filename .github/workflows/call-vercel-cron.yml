@@ -2,7 +2,7 @@ name: Call Vercel Cron Endpoint
 
 on:
   schedule:
-    - cron: "43 0 * * *"
+    - cron: "44 0 * * *"
 
 jobs:
   call-cron:
