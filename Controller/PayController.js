@@ -391,43 +391,9 @@ const getVoucherByCus = async (req, res) => {
     const { Service_ID, Partner_ID, Price } = req.body;
     const numericPrice = Number(Price);
 
-    const havevoucher = await HaveVoucher.find({ Service_ID });
-    const voucherCus = await VoucherCusDB.findOne({ CusID });
-
-    if (!havevoucher.length) {
-      return res.status(404).json({ message: "HaveVoucher not found" });
-    }
-
-    const voucherIDs = havevoucher.map((v) => v.Voucher_ID);
-
-    let vouchers = [];
-
-    if (voucherCus?.Voucher_ID && voucherIDs.includes(voucherCus.Voucher_ID)) {
-      const personalVoucherData = await Voucher.aggregate([
-        {
-          $match: {
-            _id: voucherCus.Voucher_ID,
-          },
-        },
-        {
-          $lookup: {
-            from: "conditions",
-            localField: "_id",
-            foreignField: "Voucher_ID",
-            as: "conditions",
-          },
-        },
-      ]);
-
-      if (personalVoucherData.length > 0) {
-        vouchers.push(...personalVoucherData);
-      }
-    }
-
-    const otherVouchers = await Voucher.aggregate([
+    const listVoucher = await Voucher.aggregate([
       {
         $match: {
-          _id: { $in: voucherIDs },
           States: "Enable",
           $or: [{ Partner_ID: Partner_ID }, { Partner_ID: null }],
           MinCondition: { $lte: numericPrice },
@@ -441,25 +407,22 @@ const getVoucherByCus = async (req, res) => {
           as: "conditions",
         },
       },
+      {
+        $lookup: {
+          from: "havevouchers",
+          localField: "_id",
+          foreignField: "Voucher_ID",
+          as: "havevouchers",
+        },
+      },
+      {
+        $match: {
+          "havevouchers.Service_ID": Service_ID,
+        },
+      },
     ]);
 
-    if (!otherVouchers) {
-      return res.status(404).json({ message: "No applicable voucher found" });
-    }
-
-    vouchers.push(...otherVouchers);
-
-    const uniqueVouchers = Array.from(
-      new Map(vouchers.map((v) => [v._id, v])).values()
-    );
-
-    if (!uniqueVouchers.length) {
-      return res
-        .status(404)
-        .json({ message: "Voucher or conditions not found" });
-    }
-
-    res.status(200).json(uniqueVouchers);
+    res.status(200).json(listVoucher);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

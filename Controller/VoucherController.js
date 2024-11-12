@@ -685,38 +685,43 @@ const findcondition = async (req, res) => {
   res.json(condition);
 };
 
+const removeTimeFromDate = (date) => {
+  const dateOnly = new Date(date);
+  dateOnly.setHours(0, 0, 0, 0);
+  return dateOnly;
+};
+
 cron.schedule("0 0 * * *", async () => {
   try {
-    const now = new Date();
+    const now = removeTimeFromDate(new Date());
     console.log("Running cron job to check voucher states...");
 
-    const vouchersToUpdate = await VoucherDB.find({
-      $or: [
-        { ReleaseTime: { $lte: now }, ExpiredTime: { $gte: now } },
-        { ExpiredTime: { $lte: now } },
-      ],
-    });
+    const vouchersToUpdate = await VoucherDB.find();
+
+    console.log(`Found ${vouchersToUpdate.length} vouchers to update`);
 
     for (const voucher of vouchersToUpdate) {
-      const releaseTime = new Date(voucher.ReleaseTime);
-      const expiredTime = new Date(voucher.ExpiredTime);
+      const releaseTime = removeTimeFromDate(voucher.ReleaseTime);
+      const expiredTime = removeTimeFromDate(voucher.ExpiredTime);
 
       if (
-        releaseTime === now &&
+        releaseTime <= now &&
         expiredTime >= now &&
         voucher.RemainQuantity > 0
       ) {
         voucher.States = "Enable";
-      } else if (expiredTime === now) {
+        console.log(`Voucher ${voucher._id} set to Enable`);
+      } else if (expiredTime <= now) {
         voucher.States = "Disable";
+        console.log(`Voucher ${voucher._id} set to Disable`);
       }
 
       await voucher.save();
       console.log(
         `Voucher ${voucher._id} has been updated to ${voucher.States}`
       );
-      numredis = Math.floor(Math.random() * 100);
     }
+    console.log("VoucherDB updated successfully");
   } catch (error) {
     console.error("Error updating vouchers:", error);
   }
