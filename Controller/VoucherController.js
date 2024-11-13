@@ -685,7 +685,9 @@ cron.schedule("0 0 * * *", async () => {
     const now = removeTimeFromDate(new Date());
     console.log("Running cron job to check voucher states...");
 
-    const vouchersToUpdate = await VoucherDB.find();
+    const vouchersToUpdate = await VoucherDB.find({
+      status: { $ne: "Deleted" },
+    });
 
     console.log(`Found ${vouchersToUpdate.length} vouchers to update`);
 
@@ -721,7 +723,9 @@ const VoucherWithDate = async (req, res) => {
     const now = removeTimeFromDate(new Date());
     console.log("Running cron job to check voucher states...");
 
-    const vouchersToUpdate = await VoucherDB.find();
+    const vouchersToUpdate = await VoucherDB.find({
+      status: { $ne: "Deleted" },
+    });
 
     console.log(`Found ${vouchersToUpdate.length} vouchers to update`);
 
