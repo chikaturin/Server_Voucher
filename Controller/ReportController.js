@@ -89,6 +89,7 @@ const SolveReport = async (req, res) => {
     if (!report) {
       return res.status(404).json({ message: "Report not found" });
     }
+    numredis = math.floor(Math.random() * 100);
     res.status(200).json({ message: "Solve Report successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
