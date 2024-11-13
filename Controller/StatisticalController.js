@@ -46,20 +46,17 @@ const Statistical_ID = async (req, res) => {
     if (cacheStatistical) {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
-    const history = await HistoryDB.aggregate([
-      { $match: { Voucher_ID: _id } },
+    const history = await HistoryDB.find({ Voucher_ID: _id });
+    const voucher = await Voucher.aggregate([
       {
-        $lookup: {
-          from: "vouchers",
-          localField: "Voucher_ID",
-          foreignField: "_id",
-          as: "vouchers",
+        $match: {
+          _id,
         },
       },
       {
         $lookup: {
           from: "havevouchers",
-          localField: "Voucher_ID",
+          localField: "_id",
           foreignField: "Voucher_ID",
           as: "haveVouchers",
         },
@@ -70,9 +67,18 @@ const Statistical_ID = async (req, res) => {
       return res.status(404).json({ message: "History not found" });
     }
 
-    await redisClient.set(key, JSON.stringify(history), "EX", 3600);
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher not found" });
+    }
 
-    res.json(history);
+    const data = {
+      history,
+      voucher,
+    };
+
+    await redisClient.set(key, JSON.stringify(data), "EX", 3600);
+
+    res.json(data);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

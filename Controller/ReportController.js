@@ -9,6 +9,8 @@ const ensureRedisConnection = async () => {
   }
 };
 
+let numredis = 0;
+
 const CreateReport = async (req, res) => {
   const ReportSchema = z.object({
     Content: z.string().min(1, "Content is required"),
@@ -35,6 +37,7 @@ const CreateReport = async (req, res) => {
       ReportedBy,
       StateReport,
     });
+    numredis = math.floor(Math.random() * 100);
     await reportVoucher.save();
     res.status(201).json({ message: "Create ReportVoucher successfully" });
   } catch (error) {
@@ -49,6 +52,7 @@ const deleteReportVoucher = async (req, res) => {
     if (!reportVoucher) {
       return res.status(404).json({ message: "ReportVoucher not found" });
     }
+    numredis = math.floor(Math.random() * 100);
     res.status(200).json({ message: "Delete ReportVoucher successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -58,7 +62,7 @@ const deleteReportVoucher = async (req, res) => {
 const getReport = async (req, res) => {
   try {
     await ensureRedisConnection();
-    const cacheKey = "ReportVoucher";
+    const cacheKey = `ReportVoucher:${numredis}`;
     const cacheReport = await redisClient.get(cacheKey);
     if (cacheReport) {
       return res.status(200).json(JSON.parse(cacheReport));

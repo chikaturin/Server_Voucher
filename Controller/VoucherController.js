@@ -590,7 +590,7 @@ const deleteVoucher = async (req, res) => {
 
     numredis = Math.floor(Math.random() * 100);
 
-    voucher.States = "deleted";
+    voucher.States = "Deleted";
     await voucher.save();
 
     res.json({ message: "Voucher deleted successfully" });
