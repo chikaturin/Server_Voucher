@@ -2,7 +2,7 @@ name: Fetch Voucher API at Midnight
 
 on:
   schedule:
-    - cron: "0 0 * * *" # Chạy mỗi ngày vào 0:00 giờ UTC
+    - cron: "0 0 * * *" 
 
 jobs:
   fetch-api:
