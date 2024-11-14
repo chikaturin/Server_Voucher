@@ -6,7 +6,7 @@ const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
-const PORT = 3000;
+const PORT = 3003;
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
