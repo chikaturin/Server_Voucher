@@ -49,4 +49,18 @@ const run = async () => {
   });
 };
 
-// run().catch(console.error);
+const run2 = async () => {
+  await consumer.connect();
+  await consumer.subscribe({ topic: "voucher", fromBeginning: true });
+
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      console.log({
+        value: message.value.toString(),
+      });
+    },
+  });
+};
+run2().catch(console.error);
+
+run().catch(console.error);
