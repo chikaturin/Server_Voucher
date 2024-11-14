@@ -401,7 +401,7 @@ const ApplyVoucher = async (req, res) => {
       }
     }
 
-    runconsumer(_id, CusID, TotalDiscount).catch(console.error);
+    await runconsumer(_id, CusID, TotalDiscount).catch(console.error);
 
     const Infor = {
       VoucherID: _id,
