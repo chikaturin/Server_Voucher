@@ -33,7 +33,15 @@ const run = async (status, infor) => {
   while (timeElapsed < 300000 && status !== 200 && status !== 400) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "USING" }],
+      messages: [
+        {
+          value: "USING",
+          headers: {
+            key: __TypeId__,
+            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+          },
+        },
+      ],
     });
     await new Promise((resolve) => setTimeout(resolve, 10000));
     timeElapsed += 10000;
@@ -42,17 +50,41 @@ const run = async (status, infor) => {
   if (status === 200) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: JSON.stringify(infor) }],
+      messages: [
+        {
+          value: JSON.stringify(infor),
+          headers: {
+            key: __TypeId__,
+            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+          },
+        },
+      ],
     });
   } else if (status === 400) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "FAILED" }],
+      messages: [
+        {
+          value: "FAILED",
+          headers: {
+            key: __TypeId__,
+            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+          },
+        },
+      ],
     });
   } else if (timeElapsed >= 300000) {
     await producer.send({
       topic: "useVoucher",
-      messages: [{ value: "OVER TIME" }],
+      messages: [
+        {
+          value: "OVER TIME",
+          headers: {
+            key: __TypeId__,
+            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+          },
+        },
+      ],
     });
   }
 
