@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  // createHistory,
+  createHistory,
   // Statistical_Voucher,
   // HistoryCus,
   Statistical_ID,
@@ -13,7 +13,7 @@ const {
 
 const checktokken = require("../Middleware/check.js").checktokken;
 
-// router.post("/createHistory", createHistory);
+router.post("/createHistory", createHistory);
 // router.get("/Statistical_Voucher", Statistical_Voucher);
 // router.get("/HistoryCus", checktokken, HistoryCus);
 

@@ -225,6 +225,7 @@ const StatisticalSort = async (req, res) => {
 // Statistical_Voucher,
 // HistoryCus,
 module.exports = {
+  createHistory,
   Statistical_ID,
   Statistical_PartnerService,
   StatisticalSort,
