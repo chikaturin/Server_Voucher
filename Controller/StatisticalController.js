@@ -43,7 +43,6 @@ const Statistical_ID = async (req, res) => {
     const { _id, month, year } = req.params;
     const key = `Statistical_ID:${_id}:${month}:${year}`;
     const cacheStatistical = await redisClient.get(key);
-    await redisClient.del(key);
     if (cacheStatistical) {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
