@@ -8,6 +8,8 @@ const VoucherCusDB = require("../Schema/schema").VoucherCus;
 const NoteDB = require("../Schema/schema").Note;
 const redisClient = require("../Middleware/redisClient");
 
+let numRedis = 0;
+
 const ensureRedisConnection = async () => {
   if (!redisClient.isOpen) {
     await redisClient.connect();
@@ -375,6 +377,10 @@ const ApplyVoucher = async (req, res) => {
       Price: Price - TotalDiscount,
     };
 
+    numRedis = Math.floor(Math.random() * 100);
+
+    console.log("Apply voucher successfully", Infor);
+
     await run(200, Infor);
     console.log("Apply voucher successfully", Infor);
 
@@ -387,9 +393,24 @@ const ApplyVoucher = async (req, res) => {
 
 const getVoucherByCus = async (req, res) => {
   try {
-    const CusID = req.decoded?.id;
+    await ensureRedisConnection();
+    const CusID = req.decoded?.email;
+    console.log("Get voucher by customer", CusID);
     const { Service_ID, Partner_ID, Price } = req.body;
     const numericPrice = Number(Price);
+
+    const CusIDCheck = await History.find({ CusID });
+    const usedVoucherIds = CusIDCheck.map((item) => item.Voucher_ID);
+    const usedDates = CusIDCheck.reduce((acc, check) => {
+      acc[check.Voucher_ID] = check.Date;
+      return acc;
+    }, {});
+
+    const rediskey = `Voucher: ${CusID} ${Service_ID} ${Partner_ID} ${numericPrice}`;
+    const voucherList = await redisClient.get(rediskey);
+    if (voucherList) {
+      const voucherListJson = JSON.parse(voucherList);
+    }
 
     const listVoucher = await Voucher.aggregate([
       {
@@ -397,6 +418,7 @@ const getVoucherByCus = async (req, res) => {
           States: "Enable",
           $or: [{ Partner_ID: Partner_ID }, { Partner_ID: null }],
           MinCondition: { $lte: numericPrice },
+          _id: { $nin: usedVoucherIds },
         },
       },
       {
@@ -418,9 +440,14 @@ const getVoucherByCus = async (req, res) => {
       {
         $match: {
           "havevouchers.Service_ID": Service_ID,
+          $expr: {
+            $lte: [usedDates[`$_id`], "$ReleaseTime"],
+          },
         },
       },
     ]);
+
+    await redisClient.setEx(`${rediskey}`, 3600, JSON.stringify(listVoucher));
 
     res.status(200).json(listVoucher);
   } catch (error) {

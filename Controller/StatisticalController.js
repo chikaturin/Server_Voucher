@@ -11,31 +11,31 @@ const ensureRedisConnection = async () => {
 let timeredis;
 
 // //xoá
-// const createHistory = async (req, res) => {
-//   try {
-//     const { Voucher_ID, CusID, TotalDiscount, Date } = req.body;
+const createHistory = async (req, res) => {
+  try {
+    const { Voucher_ID, CusID, TotalDiscount, Date } = req.body;
 
-//     let historyCounter = await CounterHistoryDB.findOneAndUpdate(
-//       { _id: "Statistical" },
-//       { $inc: { seq: 1 } },
-//       { new: true, upsert: true }
-//     );
+    let historyCounter = await CounterHistoryDB.findOneAndUpdate(
+      { _id: "Statistical" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
 
-//     const _id = `HIS${historyCounter.seq}`;
-//     const history = new HistoryDB({
-//       _id,
-//       Voucher_ID,
-//       CusID,
-//       TotalDiscount,
-//       Date,
-//     });
-//     await history.save();
+    const _id = `HIS${historyCounter.seq}`;
+    const history = new HistoryDB({
+      _id,
+      Voucher_ID,
+      CusID,
+      TotalDiscount,
+      Date,
+    });
+    await history.save();
 
-//     res.status(201).json({ message: "History created successfully", _id });
-//   } catch (error) {
-//     res.status(400).json({ message: error.message });
-//   }
-// };
+    res.status(201).json({ message: "History created successfully", _id });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 const Statistical_ID = async (req, res) => {
   try {
