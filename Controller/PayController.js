@@ -90,11 +90,11 @@ const consumer = kafka.consumer({ groupId: "my-consumer" });
 
 const runconsumer = async (Voucher_ID, CusID, TotalDiscount) => {
   await consumer.connect();
-  await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
+  await consumer.subscribe({ topic: "Voucher", fromBeginning: true });
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      if (message.value.toString() === "Success") {
+      if (message.value.toString() === "SUCCESS") {
         const counterID = await CounterHistory.findOneAndUpdate(
           { _id: "Statistical" },
           { $inc: { seq: 1 } },
@@ -111,6 +111,13 @@ const runconsumer = async (Voucher_ID, CusID, TotalDiscount) => {
         });
         await history.save();
         console.log(`Saved history with ID: ${_idhis}`);
+      } else {
+        const voucher = await Voucher.findByIdAndUpdate(
+          _id,
+          { $inc: { RemainQuantity: 1, AmountUsed: -1 } },
+          { new: true }
+        );
+        console.log(`FAIL`, Voucher_ID);
       }
     },
   });
