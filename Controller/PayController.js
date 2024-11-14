@@ -35,7 +35,6 @@ const run = async (status, infor) => {
       topic: "useVoucher",
       messages: [
         {
-          value: "USING",
           headers: {
             __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
           },
