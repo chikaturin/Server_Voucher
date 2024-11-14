@@ -37,8 +37,8 @@ const run = async (status, infor) => {
         {
           value: "USING",
           headers: {
-            key: __TypeId__,
-            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+            key: "__TypeId__",
+            value: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
           },
         },
       ],
@@ -54,8 +54,8 @@ const run = async (status, infor) => {
         {
           value: JSON.stringify(infor),
           headers: {
-            key: __TypeId__,
-            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+            key: "__TypeId__",
+            value: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
           },
         },
       ],
@@ -67,8 +67,8 @@ const run = async (status, infor) => {
         {
           value: "FAILED",
           headers: {
-            key: __TypeId__,
-            value: com.wowo.wowo.kafka.messages.UseVoucherMessage,
+            key: "__TypeId__",
+            value: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
           },
         },
       ],
