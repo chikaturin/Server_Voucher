@@ -740,7 +740,7 @@ const VoucherWithDate = async (req, res) => {
       ) {
         voucher.States = "Enable";
         console.log(`Voucher ${voucher._id} set to Enable`);
-      } else if (expiredTime <= now) {
+      } else if (expiredTime < now) {
         voucher.States = "Disable";
         console.log(`Voucher ${voucher._id} set to Disable`);
       }
