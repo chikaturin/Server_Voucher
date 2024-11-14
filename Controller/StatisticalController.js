@@ -40,13 +40,24 @@ const createHistory = async (req, res) => {
 const Statistical_ID = async (req, res) => {
   try {
     await ensureRedisConnection();
-    const { _id } = req.params;
-    const key = `Statistical_ID:${_id}`;
+    const { _id, month, year } = req.params;
+    const key = `Statistical_ID:${_id}:${month}:${year}`;
     const cacheStatistical = await redisClient.get(key);
+    await redisClient.del(key);
     if (cacheStatistical) {
       return res.status(200).json(JSON.parse(cacheStatistical));
     }
-    const history = await HistoryDB.find({ Voucher_ID: _id });
+
+    const history = await HistoryDB.find({
+      Voucher_ID: _id,
+      $expr: {
+        $and: [
+          { $eq: [{ $month: "$Date" }, Number(month)] },
+          { $eq: [{ $year: "$Date" }, Number(year)] },
+        ],
+      },
+    });
+
     const voucher = await Voucher.aggregate([
       {
         $match: {
@@ -63,11 +74,11 @@ const Statistical_ID = async (req, res) => {
       },
     ]);
 
-    if (!history) {
+    if (!history.length) {
       return res.status(404).json({ message: "History not found" });
     }
 
-    if (!voucher) {
+    if (!voucher.length) {
       return res.status(404).json({ message: "Voucher not found" });
     }
 
@@ -76,9 +87,9 @@ const Statistical_ID = async (req, res) => {
       voucher,
     };
 
-    await redisClient.set(key, JSON.stringify(data), "EX", 3600);
+    await redisClient.setEx(key, 3600, JSON.stringify(data));
 
-    res.json(data);
+    res.status(200).json(data);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
