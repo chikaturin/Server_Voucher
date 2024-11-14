@@ -90,7 +90,7 @@ const consumer = kafka.consumer({ groupId: "my-consumer" });
 
 const runconsumer = async (Voucher_ID, CusID, TotalDiscount) => {
   await consumer.connect();
-  await consumer.subscribe({ topic: "Voucher", fromBeginning: true });
+  await consumer.subscribe({ topic: "voucher", fromBeginning: true });
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
@@ -413,6 +413,7 @@ const ApplyVoucher = async (req, res) => {
 
     numRedis = Math.floor(Math.random() * 100);
 
+    await NoteDB.deleteOne({ OrderID });
     console.log("Apply voucher successfully", Infor);
 
     await run(200, Infor);
