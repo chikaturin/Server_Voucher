@@ -393,7 +393,6 @@ const ApplyVoucher = async (req, res) => {
 
 const getVoucherByCus = async (req, res) => {
   try {
-    await ensureRedisConnection();
     const CusID = req.decoded?.email;
     console.log("Get voucher by customer", CusID);
     const { Service_ID, Partner_ID, Price } = req.body;
@@ -406,19 +405,12 @@ const getVoucherByCus = async (req, res) => {
       return acc;
     }, {});
 
-    const rediskey = `Voucher: ${CusID} ${Service_ID} ${Partner_ID} ${numericPrice}`;
-    const voucherList = await redisClient.get(rediskey);
-    if (voucherList) {
-      const voucherListJson = JSON.parse(voucherList);
-    }
-
     const listVoucher = await Voucher.aggregate([
       {
         $match: {
           States: "Enable",
           $or: [{ Partner_ID: Partner_ID }, { Partner_ID: null }],
           MinCondition: { $lte: numericPrice },
-          _id: { $nin: usedVoucherIds },
         },
       },
       {
@@ -441,13 +433,15 @@ const getVoucherByCus = async (req, res) => {
         $match: {
           "havevouchers.Service_ID": Service_ID,
           $expr: {
-            $lte: [usedDates[`$_id`], "$ReleaseTime"],
+            $cond: {
+              if: { $gte: ["$ReleaseTime", usedDates[`$_id`]] },
+              then: true,
+              else: { $not: { $in: ["$_id", usedVoucherIds] } },
+            },
           },
         },
       },
     ]);
-
-    await redisClient.setEx(`${rediskey}`, 3600, JSON.stringify(listVoucher));
 
     res.status(200).json(listVoucher);
   } catch (error) {
