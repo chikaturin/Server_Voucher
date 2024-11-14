@@ -77,7 +77,7 @@ const run = async (status, infor) => {
         {
           value: "FAILED",
           headers: {
-            _TypeId_: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
+            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
           },
         },
       ],
