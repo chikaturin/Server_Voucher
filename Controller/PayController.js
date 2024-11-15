@@ -86,43 +86,6 @@ const run = async (status, infor) => {
   await producer.disconnect();
 };
 
-const consumer = kafka.consumer({ groupId: "my-consumer" });
-
-const runconsumer = async (Voucher_ID, CusID, TotalDiscount) => {
-  await consumer.connect();
-  await consumer.subscribe({ topic: "voucher", fromBeginning: true });
-
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
-      if (message.value.toString() === "SUCCESS") {
-        const counterID = await CounterHistory.findOneAndUpdate(
-          { _id: "Statistical" },
-          { $inc: { seq: 1 } },
-          { new: true, upsert: true }
-        );
-        const _idhis = `HIS${counterID.seq}`;
-
-        const history = new History({
-          _id: _idhis,
-          Voucher_ID,
-          CusID,
-          TotalDiscount,
-          Date: new Date(),
-        });
-        await history.save();
-        console.log(`Saved history with ID: ${_idhis}`);
-      } else {
-        const voucher = await Voucher.findByIdAndUpdate(
-          _id,
-          { $inc: { RemainQuantity: 1, AmountUsed: -1 } },
-          { new: true }
-        );
-        console.log(`FAIL`, Voucher_ID);
-      }
-    },
-  });
-};
-
 const CalculateVoucher = async (req, res) => {
   try {
     const { _id, Price } = req.body;
@@ -350,54 +313,52 @@ const ReceiveVoucher = async (req, res) => {
 
 const ApplyVoucher = async (req, res) => {
   try {
+    await ensureRedisConnection();
     const { _id } = req.params;
     const CusID = req.decoded?.email;
+
+    const keycache = `usevoucher:${_id}`;
+    const cachedApplyVoucher = await redisClient.get(keycache);
+    if (cachedApplyVoucher) {
+      return res.status(400).json({ message: "VOUCHER USED" });
+    }
+
     const { TotalDiscount, Price, OrderID } = req.body;
 
-    const voucherName = await Voucher.findById(_id);
-    if (!voucherName || voucherName.RemainQuantity < 1) {
-      return res.status(404).json({ message: "Không tìm thấy voucher" });
-    } else {
-      const voucher = await Voucher.findByIdAndUpdate(
-        _id,
-        { $match: { RemainQuantity: { $gt: 0 } } },
-        { $inc: { RemainQuantity: -1, AmountUsed: 1 } },
-        { new: true }
-      );
+    const VoucherApply = await Voucher.findById(_id);
 
-      if (!voucher) {
-        await run(400, "FAILED");
-        return res.status(404).json({ message: "Voucher not found" });
-      }
-
-      if (voucher.RemainQuantity < 1) {
-        await run(400, "FAILED");
-        await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
-        return res
-          .status(400)
-          .json({ message: "Voucher quantity is insufficient" });
-      }
-
-      await runconsumer(_id, CusID, TotalDiscount).catch(console.error);
-
-      const Infor = {
-        VoucherID: _id,
-        VoucherName: voucherName.Name,
-        Discount: TotalDiscount,
-        OrderID: OrderID,
-        Price: Price - TotalDiscount,
-      };
-
-      numRedis = Math.floor(Math.random() * 100);
-
-      await NoteDB.deleteOne({ OrderID });
-      console.log("Apply voucher successfully", Infor);
-
-      await run(200, Infor);
-      console.log("Apply voucher successfully", Infor);
-
-      res.status(200).json({ message: "Apply voucher successfully" });
+    if (!VoucherApply) {
+      await run(400, "FAILED");
+      return res.status(404).json({ message: "Voucher not found" });
     }
+
+    if (VoucherApply.RemainQuantity < 1) {
+      await run(400, "FAILED");
+      await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
+      return res
+        .status(400)
+        .json({ message: "Voucher quantity is insufficient" });
+    }
+
+    VoucherApply.RemainQuantity -= 1;
+    VoucherApply.AmountUsed += 1;
+    await VoucherApply.save();
+
+    const Infor = {
+      VoucherID: _id,
+      VoucherName: VoucherApply.Name,
+      Discount: TotalDiscount,
+      OrderID: OrderID,
+      Price: Price - TotalDiscount,
+    };
+
+    numRedis = Math.floor(Math.random() * 100);
+
+    // await NoteDB.deleteOne({ OrderID });
+    await run(200, Infor);
+    console.log("Apply voucher successfully", Infor);
+    await redisClient.setEx(keycache, 10, JSON.stringify(Infor));
+    res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
     await run(400, "FAILED");
     res.status(400).json({ message: error.message });
