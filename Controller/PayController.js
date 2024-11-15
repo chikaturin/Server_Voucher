@@ -348,6 +348,9 @@ const ApplyVoucher = async (req, res) => {
     VoucherApply.RemainQuantity -= 1;
     VoucherApply.AmountUsed += 1;
     await VoucherApply.save();
+    if (VoucherApply.RemainQuantity < 1) {
+      return res.status(400).json({ message: "VOUCHER USED" });
+    }
 
     const Infor = {
       VoucherID: _id,
