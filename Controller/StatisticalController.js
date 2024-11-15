@@ -114,12 +114,6 @@ const Statistical_ID = async (req, res) => {
 
 const Statistical_VoucherAdmin = async (req, res) => {
   try {
-    await ensureRedisConnection();
-    const cacheKey = "Statistical_VoucherAdmin";
-    const cacheStatistical = await redisClient.get(cacheKey);
-    if (cacheStatistical) {
-      return res.status(200).json(JSON.parse(cacheStatistical));
-    }
     const Statistical = await HistoryDB.aggregate([
       {
         $lookup: {
@@ -138,7 +132,6 @@ const Statistical_VoucherAdmin = async (req, res) => {
         },
       },
     ]);
-    await redisClient.set(cacheKey, JSON.stringify(Statistical));
     res.json(Statistical);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -147,17 +140,6 @@ const Statistical_VoucherAdmin = async (req, res) => {
 
 const Statistical_PartnerService = async (req, res) => {
   try {
-    await ensureRedisConnection();
-
-    const Partner_ID = req.decoded?.partnerId;
-    if (!Partner_ID) {
-      return res.status(400).json({ message: "Missing Partner_ID" });
-    }
-    const cacheStatistical = await redisClient.get(`Statistical:${Partner_ID}`);
-
-    if (cacheStatistical) {
-      return res.status(200).json(JSON.parse(cacheStatistical));
-    }
     const Statistical = await HistoryDB.aggregate([
       {
         $lookup: {
@@ -181,12 +163,6 @@ const Statistical_PartnerService = async (req, res) => {
         },
       },
     ]);
-
-    await redisClient.setEx(
-      `Statistical:${Partner_ID}`,
-      3600,
-      JSON.stringify(Statistical)
-    );
 
     res.status(200).json(Statistical);
   } catch (error) {
