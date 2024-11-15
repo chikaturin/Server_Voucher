@@ -346,10 +346,6 @@ const ApplyVoucher = async (req, res) => {
     const { TotalDiscount, Price, OrderID } = req.body;
 
     VoucherApply.RemainQuantity -= 1;
-    if (VoucherApply.RemainQuantity == 0) {
-      VoucherApply.States = "Disable";
-      return res.status(400).json({ message: "Voucher not enough" });
-    }
     VoucherApply.AmountUsed += 1;
     await VoucherApply.save();
 

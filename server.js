@@ -71,7 +71,6 @@ const run2 = async () => {
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        // Parse the message value
         const messageValue = message.value.toString();
         if (messageValue === "SUCCESS") {
           axios
@@ -102,6 +101,4 @@ const run2 = async () => {
     },
   });
 };
-// run2().catch(console.error);
-
-runConsumer().catch(console.error);
+run2().catch(console.error);
