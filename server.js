@@ -6,7 +6,7 @@ const { Kafka } = require("kafkajs");
 
 app.use(cors());
 app.use(express.json());
-const PORT = 3001;
+const PORT = 3000;
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -32,22 +32,37 @@ const consumerKafka = new Kafka({
   brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
 });
 
-const consumer = consumerKafka.consumer({ groupId: "my-group" });
+const consumer = consumerKafka.consumer({ groupId: "my-consumer" });
 
-const run = async () => {
+const runConsumer = async () => {
   await consumer.connect();
   await consumer.subscribe({ topic: "useVoucher", fromBeginning: true });
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      console.log({
-        partition,
-        offset: message.offset,
-        value: message.value.toString(),
-      });
+      try {
+        // Parse the message value
+        const messageValue = message.value.toString();
+        if (messageValue === "failed") {
+          axios
+            .get("https://server-voucher.vercel.app/api/READKAFKA/FAIL", {
+              message: messageValue,
+            })
+            .then((res) => {
+              console.log("Response from server:", res.data);
+            })
+            .catch((error) => {
+              console.error("Error sending message to server:", error);
+            });
+        }
+      } catch (error) {
+        console.error("Error parsing Kafka message:", error);
+      }
     },
   });
 };
+
+runConsumer().catch(console.error);
 
 const run2 = async () => {
   await consumer.connect();
@@ -55,12 +70,38 @@ const run2 = async () => {
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      console.log({
-        value: message.value.toString(),
-      });
+      try {
+        // Parse the message value
+        const messageValue = message.value.toString();
+        if (messageValue === "SUCCESS") {
+          axios
+            .get("https://server-voucher.vercel.app/api/READKAFKA/SUCCESS", {
+              message: messageValue,
+            })
+            .then((res) => {
+              console.log("Response from server:", res.data);
+            })
+            .catch((error) => {
+              console.error("Error sending message to server:", error);
+            });
+        } else if (messageValue === "FAILED") {
+          axios
+            .get("https://server-voucher.vercel.app/api/READKAFKA/FAIL", {
+              message: messageValue,
+            })
+            .then((res) => {
+              console.log("Response from server:", res.data);
+            })
+            .catch((error) => {
+              console.error("Error sending message to server:", error);
+            });
+        }
+      } catch (error) {
+        console.error("Error parsing Kafka message:", error);
+      }
     },
   });
 };
-run2().catch(console.error);
+// run2().catch(console.error);
 
-run().catch(console.error);
+runConsumer().catch(console.error);

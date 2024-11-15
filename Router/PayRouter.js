@@ -11,6 +11,7 @@ const {
   RequireVoucher,
   GetNote,
   deleteNote,
+  READKAFKA,
 } = require("../Controller/PayController.js");
 const { checktokken } = require("../Middleware/check.js");
 
@@ -32,5 +33,7 @@ router.get("/GetNote/:OrderID", GetNote);
 router.get("/CheckToken", checktokken);
 
 router.delete("deleteNote", deleteNote);
+
+router.get("/READKAFKA/:Status", READKAFKA);
 
 module.exports = router;

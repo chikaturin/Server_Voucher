@@ -30,21 +30,6 @@ const run = async (status, infor) => {
   let timeElapsed = 0;
   await producer.connect();
 
-  while (timeElapsed < 300000 && status !== 200 && status !== 400) {
-    await producer.send({
-      topic: "useVoucher",
-      messages: [
-        {
-          headers: {
-            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
-          },
-        },
-      ],
-    });
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-    timeElapsed += 10000;
-  }
-
   if (status === 200) {
     await producer.send({
       topic: "useVoucher",
@@ -62,10 +47,7 @@ const run = async (status, infor) => {
       topic: "useVoucher",
       messages: [
         {
-          value: "FAILED",
-          headers: {
-            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
-          },
+          value: "failed",
         },
       ],
     });
@@ -74,16 +56,44 @@ const run = async (status, infor) => {
       topic: "useVoucher",
       messages: [
         {
-          value: "FAILED",
-          headers: {
-            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
-          },
+          value: "failed",
         },
       ],
     });
   }
 
   await producer.disconnect();
+};
+
+let HistoryKafka;
+
+const READKAFKA = async (req, res) => {
+  try {
+    const { Status } = req.params;
+    if (Status === "SUCCESS") {
+      const counterID = await CounterHistory.findOneAndUpdate(
+        { _id: "Statistical" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const history = await History.create({
+        _id: counterID.seq,
+        Voucher_ID: HistoryKafka.VoucherID,
+        TotalDiscount: HistoryKafka.TotalDiscount,
+        CusID: HistoryKafka.CusID,
+        Date: new Date(),
+      });
+      HistoryKafka = {};
+      res.status(200).json({ message: "SUCCESS CREATE HISTORY" });
+    } else if (Status === "FAIL") {
+      const voucher = await Voucher.findByIdAndUpdate({
+        $inc: { RemainQuantity: 1, AmountUsed: -1 },
+      });
+      res.status(400).json({ message: "FAILED CREATE HISTORY" });
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const CalculateVoucher = async (req, res) => {
@@ -317,30 +327,29 @@ const ApplyVoucher = async (req, res) => {
     const { _id } = req.params;
     const CusID = req.decoded?.email;
 
-    const keycache = `usevoucher:${_id}`;
-    const cachedApplyVoucher = await redisClient.get(keycache);
-    if (cachedApplyVoucher) {
-      return res.status(400).json({ message: "VOUCHER USED" });
-    }
-
-    const { TotalDiscount, Price, OrderID } = req.body;
-
     const VoucherApply = await Voucher.findById(_id);
-
     if (!VoucherApply) {
       await run(400, "FAILED");
       return res.status(404).json({ message: "Voucher not found" });
     }
 
-    if (VoucherApply.RemainQuantity < 1) {
-      await run(400, "FAILED");
-      await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
-      return res
-        .status(400)
-        .json({ message: "Voucher quantity is insufficient" });
+    const keycache = `usevoucher:${_id}`;
+
+    if (VoucherApply.RemainQuantity <= 1) {
+      const cachedApplyVoucher = await redisClient.get(keycache);
+      if (cachedApplyVoucher) {
+        await run(400, "FAILED");
+        return res.status(400).json({ message: "VOUCHER USED" });
+      }
     }
 
+    const { TotalDiscount, Price, OrderID } = req.body;
+
     VoucherApply.RemainQuantity -= 1;
+    if (VoucherApply.RemainQuantity == 0) {
+      VoucherApply.States = "Disable";
+      return res.status(400).json({ message: "Voucher not enough" });
+    }
     VoucherApply.AmountUsed += 1;
     await VoucherApply.save();
 
@@ -352,9 +361,15 @@ const ApplyVoucher = async (req, res) => {
       Price: Price - TotalDiscount,
     };
 
+    HistoryKafka = {
+      VoucherID: _id,
+      TotalDiscount: TotalDiscount,
+      CusID: CusID,
+    };
+
     numRedis = Math.floor(Math.random() * 100);
 
-    // await NoteDB.deleteOne({ OrderID });
+    // await NoteDB.delete({ OrderID });
     await run(200, Infor);
     console.log("Apply voucher successfully", Infor);
     await redisClient.setEx(keycache, 10, JSON.stringify(Infor));
@@ -479,4 +494,5 @@ module.exports = {
   RequireVoucher,
   GetNote,
   deleteNote,
+  READKAFKA,
 };
