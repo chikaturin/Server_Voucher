@@ -537,7 +537,6 @@ const getvoucherManagerbyPartner = async (req, res) => {
   try {
     await ensureRedisConnection();
     const Partner_ID = req.decoded?.partnerId;
-
     const cachedVouchers = await redisClient.get(
       `vouchers:${Partner_ID}:${numredis}`
     );
@@ -546,7 +545,7 @@ const getvoucherManagerbyPartner = async (req, res) => {
     }
 
     const voucher = await VoucherDB.aggregate([
-      { $match: { Partner_ID: Partner_ID, States: { $ne: "deleted" } } },
+      { $match: { Partner_ID: Partner_ID, States: { $ne: "Deleted" } } },
       {
         $lookup: {
           from: "conditions",
