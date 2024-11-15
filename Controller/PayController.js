@@ -335,7 +335,7 @@ const ApplyVoucher = async (req, res) => {
 
     const keycache = `usevoucher:${_id}`;
 
-    if (VoucherApply.RemainQuantity <= 1) {
+    if (VoucherApply.RemainQuantity < 1) {
       const cachedApplyVoucher = await redisClient.get(keycache);
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
