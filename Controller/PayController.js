@@ -354,11 +354,6 @@ const ApplyVoucher = async (req, res) => {
     const CusID = req.decoded?.email;
     const { TotalDiscount, Price, OrderID } = req.body;
 
-    const voucherName = await Voucher.findById(_id);
-    if (!voucherName || voucherName.RemainQuantity < 1) {
-      return res.status(404).json({ message: "Không tìm thấy voucher" });
-    }
-
     const voucher = await Voucher.findByIdAndUpdate(
       _id,
       { $match: { RemainQuantity: { $gt: 0 } } },
