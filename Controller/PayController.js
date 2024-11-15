@@ -354,51 +354,26 @@ const ApplyVoucher = async (req, res) => {
     const CusID = req.decoded?.email;
     const { TotalDiscount, Price, OrderID } = req.body;
 
-    let personalVoucher = await PersonalDB.findOne({ CusID });
-    let voucherCus = await VoucherCusDB.findOne({ CusID, Voucher_ID: _id });
     const voucherName = await Voucher.findById(_id);
 
-    const Point = Price / 100000;
+    const voucher = await Voucher.findByIdAndUpdate(
+      _id,
+      { $match: { RemainQuantity: { $gt: 0 } } },
+      { $inc: { RemainQuantity: -1, AmountUsed: 1 } },
+      { new: true }
+    );
 
-    if (!personalVoucher) {
-      personalVoucher = new PersonalDB({
-        CusID,
-        Point,
-      });
-      await personalVoucher.save();
-    } else {
-      personalVoucher.Point += Point;
-      await personalVoucher.save();
+    if (!voucher) {
+      await run(400, "FAILED");
+      return res.status(404).json({ message: "Voucher not found" });
     }
 
-    let voucher;
-
-    if (voucherCus && voucherCus.Voucher_ID == _id) {
-      await VoucherCusDB.findByIdAndDelete(voucherCus._id);
-      voucher = await Voucher.findByIdAndUpdate(
-        _id,
-        { $inc: { AmountUsed: 1 } },
-        { new: true }
-      );
-    } else {
-      voucher = await Voucher.findByIdAndUpdate(
-        _id,
-        { $inc: { RemainQuantity: -1, AmountUsed: 1 } },
-        { new: true }
-      );
-
-      if (!voucher) {
-        await run(400, "FAILED");
-        return res.status(404).json({ message: "Voucher not found" });
-      }
-
-      if (voucher.RemainQuantity < 1) {
-        await run(400, "FAILED");
-        await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
-        return res
-          .status(400)
-          .json({ message: "Voucher quantity is insufficient" });
-      }
+    if (voucher.RemainQuantity < 1) {
+      await run(400, "FAILED");
+      await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
+      return res
+        .status(400)
+        .json({ message: "Voucher quantity is insufficient" });
     }
 
     await runconsumer(_id, CusID, TotalDiscount).catch(console.error);
