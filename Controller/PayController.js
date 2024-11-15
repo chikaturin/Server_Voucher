@@ -354,45 +354,50 @@ const ApplyVoucher = async (req, res) => {
     const CusID = req.decoded?.email;
     const { TotalDiscount, Price, OrderID } = req.body;
 
-    const voucher = await Voucher.findByIdAndUpdate(
-      _id,
-      { $match: { RemainQuantity: { $gt: 0 } } },
-      { $inc: { RemainQuantity: -1, AmountUsed: 1 } },
-      { new: true }
-    );
+    const voucherName = await Voucher.findById(_id);
+    if (!voucherName || voucherName.RemainQuantity < 1) {
+      return res.status(404).json({ message: "Không tìm thấy voucher" });
+    } else {
+      const voucher = await Voucher.findByIdAndUpdate(
+        _id,
+        { $match: { RemainQuantity: { $gt: 0 } } },
+        { $inc: { RemainQuantity: -1, AmountUsed: 1 } },
+        { new: true }
+      );
 
-    if (!voucher) {
-      await run(400, "FAILED");
-      return res.status(404).json({ message: "Voucher not found" });
+      if (!voucher) {
+        await run(400, "FAILED");
+        return res.status(404).json({ message: "Voucher not found" });
+      }
+
+      if (voucher.RemainQuantity < 1) {
+        await run(400, "FAILED");
+        await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
+        return res
+          .status(400)
+          .json({ message: "Voucher quantity is insufficient" });
+      }
+
+      await runconsumer(_id, CusID, TotalDiscount).catch(console.error);
+
+      const Infor = {
+        VoucherID: _id,
+        VoucherName: voucherName.Name,
+        Discount: TotalDiscount,
+        OrderID: OrderID,
+        Price: Price - TotalDiscount,
+      };
+
+      numRedis = Math.floor(Math.random() * 100);
+
+      await NoteDB.deleteOne({ OrderID });
+      console.log("Apply voucher successfully", Infor);
+
+      await run(200, Infor);
+      console.log("Apply voucher successfully", Infor);
+
+      res.status(200).json({ message: "Apply voucher successfully" });
     }
-
-    if (voucher.RemainQuantity < 1) {
-      await run(400, "FAILED");
-      await Voucher.findByIdAndUpdate(_id, { $set: { States: "Disable" } });
-      return res
-        .status(400)
-        .json({ message: "Voucher quantity is insufficient" });
-    }
-
-    await runconsumer(_id, CusID, TotalDiscount).catch(console.error);
-
-    const Infor = {
-      VoucherID: _id,
-      VoucherName: voucherName.Name,
-      Discount: TotalDiscount,
-      OrderID: OrderID,
-      Price: Price - TotalDiscount,
-    };
-
-    numRedis = Math.floor(Math.random() * 100);
-
-    await NoteDB.deleteOne({ OrderID });
-    console.log("Apply voucher successfully", Infor);
-
-    await run(200, Infor);
-    console.log("Apply voucher successfully", Infor);
-
-    res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
     await run(400, "FAILED");
     res.status(400).json({ message: error.message });
