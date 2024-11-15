@@ -339,7 +339,7 @@ const ApplyVoucher = async (req, res) => {
       const cachedApplyVoucher = await redisClient.get(keycache);
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
-        return res.status(400).json({ message: "VOUCHER USED" });
+        return res.status(400).json({ message: "VOUCHER KAFKA USED" });
       }
     }
 
@@ -348,7 +348,7 @@ const ApplyVoucher = async (req, res) => {
     VoucherApply.RemainQuantity -= 1;
     VoucherApply.AmountUsed += 1;
     await VoucherApply.save();
-    if (VoucherApply.RemainQuantity < 1) {
+    if (VoucherApply.RemainQuantity == 0) {
       return res.status(400).json({ message: "VOUCHER USED" });
     }
 
