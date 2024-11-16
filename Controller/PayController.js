@@ -71,7 +71,7 @@ const run = async (status, infor) => {
   await producer.disconnect();
 };
 
-let HistoryKafka;
+let HistoryKafka = { VoucherID: "AA", TotalDiscount: 0, CusID: "Thanh" };
 
 const READKAFKA = async (req, res) => {
   try {
@@ -89,7 +89,7 @@ const READKAFKA = async (req, res) => {
         CusID: HistoryKafka.CusID,
         Date: new Date(),
       });
-      HistoryKafka = {};
+      await history.save();
       res.status(200).json({ message: "SUCCESS CREATE HISTORY" });
     } else if (Status === "FAIL") {
       const voucher = await Voucher.findByIdAndUpdate({
