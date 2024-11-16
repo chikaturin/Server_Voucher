@@ -28,29 +28,23 @@ const runPay = async () => {
         if (messageValue === "SUCCESS") {
           try {
             const res = await axios.get(
-              "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS",
-              {
-                params: { message: messageValue },
-              }
+              "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS"
             );
             console.log("Response from server:", res.data);
+            console.log("Success voucher");
           } catch (error) {
             console.error("Error sending message to server:", error);
           }
-          console.log("Success voucher");
         } else if (messageValue === "FAILED") {
           try {
             const res = await axios.get(
-              "https://server-voucher.vercel.app/api/READKAFKA/FAIL",
-              {
-                params: { message: messageValue },
-              }
+              "https://server-voucher.vercel.app/api/READKAFKA/FAIL"
             );
             console.log("Response from server:", res.data);
           } catch (error) {
             console.error("Error sending message to server:", error);
+            console.log("Failed pay voucher");
           }
-          console.log("Failed pay voucher");
         } else {
           console.log(`Unknown message: "${messageValue}"`);
         }
