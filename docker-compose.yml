@@ -1,13 +1,21 @@
 services:
-  node:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  consumer_pay_kafka:
     build:
       context: .
-      dockerfile: Dockerfile
+    command: ["npm", "run", "start-ConsumerPayKafka"]
     environment:
-      MONGODB_URI: mongodb+srv://chikaturin:123@cluster0.ltx6a.mongodb.net/?retryWrites=true&w=majority&appName=cluster0
-      REDIS_HOST: 54.242.89.107
-      REDIS_PORT: 6379
-      KAFKA_HOST: api.wowo.htilssu.id.vn
-      KAFKA_PORT: 9092
-    ports:
-      - "3333:3333"
+      KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
+      KAFKA_PORT: "9092"
+
+  consumer_use_voucher:
+    build:
+      context: .
+    command: ["npm", "run", "start-ConsumerUseVoucher"]
+    environment:
+      KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
+      KAFKA_PORT: "9092"

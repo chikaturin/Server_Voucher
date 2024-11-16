@@ -48,6 +48,9 @@ const run = async (status, infor) => {
       messages: [
         {
           value: "failed",
+          headers: {
+            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
+          },
         },
       ],
     });
@@ -57,6 +60,9 @@ const run = async (status, infor) => {
       messages: [
         {
           value: "failed",
+          headers: {
+            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
+          },
         },
       ],
     });
@@ -335,7 +341,7 @@ const ApplyVoucher = async (req, res) => {
 
     const keycache = `usevoucher:${_id}`;
 
-    if (VoucherApply.RemainQuantity < 0) {
+    if (VoucherApply.RemainQuantity < 1) {
       const cachedApplyVoucher = await redisClient.get(keycache);
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
@@ -348,6 +354,7 @@ const ApplyVoucher = async (req, res) => {
     if (VoucherApply.RemainQuantity == 0) {
       return res.status(400).json({ message: "VOUCHER HAS EXPIRED" });
     }
+
     VoucherApply.RemainQuantity -= 1;
     VoucherApply.AmountUsed += 1;
     VoucherApply.States = "Disable";
