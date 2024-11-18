@@ -48,9 +48,6 @@ const run = async (status, infor) => {
       messages: [
         {
           value: "failed",
-          headers: {
-            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
-          },
         },
       ],
     });
@@ -60,9 +57,6 @@ const run = async (status, infor) => {
       messages: [
         {
           value: "failed",
-          headers: {
-            __TypeId__: "com.wowo.wowo.kafka.messages.UseVoucherMessage",
-          },
         },
       ],
     });
