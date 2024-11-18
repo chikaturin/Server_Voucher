@@ -376,7 +376,7 @@ const ApplyVoucher = async (req, res) => {
 
     numRedis = Math.floor(Math.random() * 100);
 
-    await NoteDB.delete({ OrderID });
+    await NoteDB.deleteMany({ OrderID });
     await run(200, Infor);
     console.log("Apply voucher successfully", Infor);
     await redisClient.setEx(keycache, 10, JSON.stringify(Infor));
