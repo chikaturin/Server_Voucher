@@ -336,6 +336,7 @@ const ApplyVoucher = async (req, res) => {
     const VoucherApply = await Voucher.findById(_id);
     if (!VoucherApply) {
       await run(400, "FAILED");
+      await NoteDB.deleteMany({ OrderID });
       return res.status(404).json({ message: "Voucher not found" });
     }
 
@@ -345,6 +346,7 @@ const ApplyVoucher = async (req, res) => {
       const cachedApplyVoucher = await redisClient.get(keycache);
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
+        await NoteDB.deleteMany({ OrderID });
         return res.status(400).json({ message: "VOUCHER USED" });
       }
     }
@@ -352,6 +354,7 @@ const ApplyVoucher = async (req, res) => {
     const { TotalDiscount, Price, OrderID } = req.body;
 
     if (VoucherApply.RemainQuantity == 0) {
+      await NoteDB.deleteMany({ OrderID });
       return res.status(400).json({ message: "VOUCHER HAS EXPIRED" });
     }
 
