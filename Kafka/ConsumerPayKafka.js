@@ -25,29 +25,29 @@ const runPay = async () => {
 
         console.log(`Received raw message:`, rawMessage);
         console.log(`Parsed message: "${messageValue}"`);
-        // if (messageValue === "SUCCESS") {
-        //   try {
-        //     const res = await axios.get(
-        //       "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS"
-        //     );
-        //     console.log("Response from server:", res.data);
-        //     console.log("Success voucher");
-        //   } catch (error) {
-        //     console.error("Error sending message to server:", error);
-        //   }
-        // } else if (messageValue === "FAILED") {
-        //   try {
-        //     const res = await axios.get(
-        //       "https://server-voucher.vercel.app/api/READKAFKA/FAIL"
-        //     );
-        //     console.log("Response from server:", res.data);
-        //   } catch (error) {
-        //     console.error("Error sending message to server:", error);
-        //     console.log("Failed pay voucher");
-        //   }
-        // } else {
-        //   console.log(`Unknown message: "${messageValue}"`);
-        // }
+        if (messageValue === "SUCCESS") {
+          try {
+            const res = await axios.get(
+              "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS"
+            );
+            console.log("Response from server:", res.data);
+            console.log("Success voucher");
+          } catch (error) {
+            console.error("Error sending message to server:", error);
+          }
+        } else if (messageValue === "FAILED") {
+          try {
+            const res = await axios.get(
+              "https://server-voucher.vercel.app/api/READKAFKA/FAIL"
+            );
+            console.log("Response from server:", res.data);
+          } catch (error) {
+            console.error("Error sending message to server:", error);
+            console.log("Failed pay voucher");
+          }
+        } else {
+          console.log(`Unknown message: "${messageValue}"`);
+        }
         console.log("Success voucher");
       } catch (error) {
         console.error("Error parsing Kafka message:", error);
