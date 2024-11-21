@@ -12,10 +12,10 @@ services:
       KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
       KAFKA_PORT: "9092"
 
-  consumer_use_voucher:
-    build:
-      context: .
-    command: ["npm", "run", "start-ConsumerUseVoucher"]
-    environment:
-      KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
-      KAFKA_PORT: "9092"
+  # consumer_use_voucher:
+  #   build:
+  #     context: .
+  #   command: ["npm", "run", "start-ConsumerUseVoucher"]
+  #   environment:
+  #     KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
+  #     KAFKA_PORT: "9092"

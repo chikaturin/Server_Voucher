@@ -65,7 +65,7 @@ const run = async (status, infor) => {
   await producer.disconnect();
 };
 
-let HistoryKafka = { VoucherID: "AA", TotalDiscount: 0, CusID: "Thanh" };
+let HistoryKafka = { VoucherID: "", TotalDiscount: 0, CusID: "" };
 
 const READKAFKA = async (req, res) => {
   try {
@@ -375,7 +375,7 @@ const ApplyVoucher = async (req, res) => {
 
     await NoteDB.deleteMany({ OrderID });
     await run(200, Infor);
-    console.log("Apply voucher successfully", Infor);
+    console.log("Apply voucher successfully", Infor, HistoryKafka);
     await redisClient.setEx(keycache, 10, JSON.stringify(Infor));
     res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
