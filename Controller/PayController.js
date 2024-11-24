@@ -65,11 +65,23 @@ const run = async (status, infor) => {
   await producer.disconnect();
 };
 
-let HistoryKafka = { VoucherID: "", TotalDiscount: 0, CusID: "" };
-
 const READKAFKA = async (req, res) => {
   try {
-    const { Status } = req.params;
+    await ensureRedisConnection();
+
+    const { Status, OrderID } = req.params;
+
+    const historyList = await redisClient.lRange("historyList", 0, -1);
+
+    const isOrderIDExist = historyList.some((history) => {
+      const parsedHistory = JSON.parse(history);
+      return parsedHistory.OrderID === OrderID;
+    });
+
+    if (isOrderIDExist) {
+      return res.status(400).json({ message: "DUPLICATE ORDERID" });
+    }
+
     if (Status === "SUCCESS") {
       const counterID = await CounterHistory.findOneAndUpdate(
         { _id: "Statistical" },
@@ -84,11 +96,16 @@ const READKAFKA = async (req, res) => {
         Date: new Date(),
       });
       await history.save();
+
       res.status(200).json({ message: "SUCCESS CREATE HISTORY" });
     } else if (Status === "FAIL") {
-      const voucher = await Voucher.findByIdAndUpdate({
-        $inc: { RemainQuantity: 1, AmountUsed: -1 },
-      });
+      await Voucher.findByIdAndUpdate(
+        HistoryKafka.VoucherID,
+        {
+          $inc: { RemainQuantity: 1, AmountUsed: -1 },
+        },
+        { new: true }
+      );
       res.status(400).json({ message: "FAILED CREATE HISTORY" });
     }
   } catch (error) {
@@ -366,12 +383,15 @@ const ApplyVoucher = async (req, res) => {
     };
 
     HistoryKafka = {
+      OrderID: OrderID,
       VoucherID: _id,
       TotalDiscount: TotalDiscount,
       CusID: CusID,
     };
 
     numRedis = Math.floor(Math.random() * 100);
+
+    await redisClient.rPush("historyList", JSON.stringify(HistoryKafka));
 
     await NoteDB.deleteMany({ OrderID });
     await run(200, Infor);

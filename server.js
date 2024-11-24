@@ -47,39 +47,34 @@ const runPay = async () => {
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        const rawMessage = message.value;
-        const messageValue = rawMessage.toString().trim();
+        const rawMessage = message.value.toString().trim();
+        const parsedMessage = JSON.parse(rawMessage);
+        const { orderId, status } = parsedMessage;
+        console.log(`Parsed message:`, parsedMessage);
 
-        console.log(`Received raw message:`, rawMessage);
-        console.log(`Parsed message: "${messageValue}"`);
-        if (messageValue === "SUCCESS") {
+        if (status === "SUCCESS") {
           try {
             const res = await axios.get(
-              "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS"
-            );
-            console.log("Response from server:", res.data);
-            console.log("Success voucher");
-          } catch (error) {
-            console.error("Error sending message to server:", error);
-          }
-          console.log("Success voucher");
-        } else if (messageValue === "FAILED") {
-          try {
-            const res = await axios.get(
-              "https://server-voucher.vercel.app/api/READKAFKA/FAIL"
+              `https://server-voucher.vercel.app/api/READKAFKA/${status}/${orderId}`
             );
             console.log("Response from server:", res.data);
           } catch (error) {
-            console.error("Error sending message to server:", error);
-            console.log("Failed pay voucher");
+            console.error("Error sending SUCCESS to server:", error.message);
           }
-          console.log("Failed pay voucher");
+        } else if (status === "FAILED") {
+          try {
+            const res = await axios.get(
+              `https://server-voucher.vercel.app/api/READKAFKA/${status}/${orderId}`
+            );
+            console.log("Response from server:", res.data);
+          } catch (error) {
+            console.error("Error sending FAILED to server:", error.message);
+          }
         } else {
-          console.log(`Unknown message: "${messageValue}"`);
+          console.log(`Unknown status: ${status}`);
         }
-        console.log("Success voucher");
       } catch (error) {
-        console.error("Error parsing Kafka message:", error);
+        console.error("Error parsing Kafka message:", error.message);
       }
     },
   });
