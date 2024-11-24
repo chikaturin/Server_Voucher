@@ -78,6 +78,19 @@ const getReport = async (req, res) => {
   }
 };
 
+const detailReport = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const report = await ReportVoucher.findById({ _id });
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    res.json(report);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 const SolveReport = async (req, res) => {
   try {
     const { _id } = req.params;
@@ -101,4 +114,5 @@ module.exports = {
   deleteReportVoucher,
   getReport,
   SolveReport,
+  detailReport,
 };
