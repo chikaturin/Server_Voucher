@@ -37,7 +37,7 @@ const CreateReport = async (req, res) => {
       ReportedBy,
       StateReport,
     });
-    numredis = math.floor(Math.random() * 100);
+    numredis = Math.floor(Math.random() * 100);
     await reportVoucher.save();
     res.status(201).json({ message: "Create ReportVoucher successfully" });
   } catch (error) {
