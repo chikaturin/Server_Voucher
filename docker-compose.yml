@@ -4,13 +4,13 @@ services:
     ports:
       - "6379:6379"
 
-  consumer_pay_kafka:
-    build:
-      context: .
-    command: ["npm", "run", "start-ConsumerPayKafka"]
-    environment:
-      KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
-      KAFKA_PORT: "9092"
+  # consumer_pay_kafka:
+  #   build:
+  #     context: .
+  #   command: ["npm", "run", "start-ConsumerPayKafka"]
+  #   environment:
+  #     KAFKA_HOST: "api.wowo.htilssu.id.vn:9092"
+  #     KAFKA_PORT: "9092"
 
   # consumer_use_voucher:
   #   build:
