@@ -15,12 +15,12 @@ const CreateReport = async (req, res) => {
   const ReportSchema = z.object({
     Content: z.string().min(1, "Content is required"),
     Voucher_ID: z.string(),
-    ReportedBy: z.string(),
   });
 
   try {
     const validateReport = ReportSchema.parse(req.body);
-    const { Content, Voucher_ID, ReportedBy } = validateReport;
+    const { Content, Voucher_ID } = validateReport;
+    const ReportedBy = req.decoded?.email;
     const DayReport = new Date();
     const counter = await CounterReport.findOneAndUpdate(
       { _id: "Report" },
