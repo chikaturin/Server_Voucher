@@ -3,6 +3,8 @@ const app = express();
 const data = require("./Data/data.js");
 const cors = require("cors");
 const { Kafka } = require("kafkajs");
+const axios = require("axios");
+const { promise } = require("zod");
 
 app.use(cors());
 app.use(express.json());
@@ -28,22 +30,59 @@ app.listen(PORT, () => {
 });
 
 const kafka = new Kafka({
-  clientId: "my-producer",
+  clientId: "my-consumer2",
   brokers: [`localhost:9092`],
 });
-const consumer = kafka.consumer({ groupId: "my-group" });
 
-const run = async () => {
+const consumer = kafka.consumer({ groupId: "my-group-vercel" });
+
+const runPay = async () => {
+  console.log("Connecting to Kafka...");
   await consumer.connect();
+  console.log("Connected to Kafka.");
+
   await consumer.subscribe({ topic: "voucher", fromBeginning: true });
+  console.log("Subscribed to topic: voucher");
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      if (message.value.toString() === "SUCCESS") {
+      try {
+        const rawMessage = message.value;
+        const messageValue = rawMessage.toString().trim();
+
+        console.log(`Received raw message:`, rawMessage);
+        console.log(`Parsed message: "${messageValue}"`);
+        if (messageValue === "SUCCESS") {
+          try {
+            const res = await axios.get(
+              "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS"
+            );
+            console.log("Response from server:", res.data);
+            console.log("Success voucher");
+          } catch (error) {
+            console.error("Error sending message to server:", error);
+          }
+          console.log("Success voucher");
+        } else if (messageValue === "FAILED") {
+          try {
+            const res = await axios.get(
+              "https://server-voucher.vercel.app/api/READKAFKA/FAIL"
+            );
+            console.log("Response from server:", res.data);
+          } catch (error) {
+            console.error("Error sending message to server:", error);
+            console.log("Failed pay voucher");
+          }
+          console.log("Failed pay voucher");
+        } else {
+          console.log(`Unknown message: "${messageValue}"`);
+        }
         console.log("Success voucher");
+      } catch (error) {
+        console.error("Error parsing Kafka message:", error);
       }
     },
   });
 };
 
-// run().catch(console.error);
+runPay().catch(console.error);

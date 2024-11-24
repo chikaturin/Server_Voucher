@@ -7,7 +7,7 @@ const kafka = new Kafka({
   brokers: ["api.wowo.htilssu.id.vn:9092"],
 });
 
-const consumer = kafka.consumer({ groupId: "my-group" });
+const consumer = kafka.consumer({ groupId: "my-group-docker-aws" });
 
 const runPay = async () => {
   console.log("Connecting to Kafka...");
