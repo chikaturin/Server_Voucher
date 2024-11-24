@@ -31,7 +31,7 @@ app.listen(PORT, () => {
 
 const kafka = new Kafka({
   clientId: "my-consumer2",
-  brokers: [`localhost:9092`],
+  brokers: [`api.wowo.htilssu.id.vn:9092`],
 });
 
 const consumer = kafka.consumer({ groupId: "my-group-vercel" });
