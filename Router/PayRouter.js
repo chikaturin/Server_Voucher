@@ -34,6 +34,6 @@ router.get("/CheckToken", checktokken);
 
 router.delete("deleteNote", deleteNote);
 
-router.get("/READKAFKA/:Status", READKAFKA);
+router.get("/READKAFKA/:Status/:OrderID", READKAFKA);
 
 module.exports = router;

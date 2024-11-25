@@ -70,17 +70,11 @@ const READKAFKA = async (req, res) => {
     await ensureRedisConnection();
 
     const { Status, OrderID } = req.params;
-
-    const historyList = await redisClient.lRange("historyList", 0, -1);
-
-    const isOrderIDExist = historyList.some((history) => {
-      const parsedHistory = JSON.parse(history);
-      return parsedHistory.OrderID === OrderID;
-    });
-
-    if (isOrderIDExist) {
-      return res.status(400).json({ message: "DUPLICATE ORDERID" });
+    const historydetail = await redisClient.get(`historyList:${OrderID}`);
+    if (!historydetail) {
+      return res.status(404).json({ message: "History not found" });
     }
+    const HistoryKafka = JSON.parse(historydetail);
 
     if (Status === "SUCCESS") {
       const counterID = await CounterHistory.findOneAndUpdate(
@@ -96,6 +90,7 @@ const READKAFKA = async (req, res) => {
         Date: new Date(),
       });
       await history.save();
+      await redisClient.del(`historyList:${OrderID}`);
 
       res.status(200).json({ message: "SUCCESS CREATE HISTORY" });
     } else if (Status === "FAIL") {
@@ -106,10 +101,10 @@ const READKAFKA = async (req, res) => {
         },
         { new: true }
       );
-      res.status(400).json({ message: "FAILED CREATE HISTORY" });
+      res.status(402).json({ message: "FAILED CREATE HISTORY" });
     }
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -382,7 +377,7 @@ const ApplyVoucher = async (req, res) => {
       Price: Price - TotalDiscount,
     };
 
-    HistoryKafka = {
+    const historyKafka = {
       OrderID: OrderID,
       VoucherID: _id,
       TotalDiscount: TotalDiscount,
@@ -391,11 +386,14 @@ const ApplyVoucher = async (req, res) => {
 
     numRedis = Math.floor(Math.random() * 100);
 
-    await redisClient.rPush("historyList", JSON.stringify(HistoryKafka));
+    await redisClient.setEx(
+      `historyList:${historyKafka.OrderID}`,
+      3600,
+      JSON.stringify(historyKafka)
+    );
 
     await NoteDB.deleteMany({ OrderID });
     await run(200, Infor);
-    console.log("Apply voucher successfully", Infor, HistoryKafka);
     await redisClient.setEx(keycache, 10, JSON.stringify(Infor));
     res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
