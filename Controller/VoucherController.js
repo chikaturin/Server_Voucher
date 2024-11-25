@@ -36,7 +36,9 @@ const createVoucherbyAdmin = async (req, res) => {
         }),
       ExpiredTime: z.string(),
       Description: z.string().optional(),
-      RemainQuantity: z.coerce.number().min(0, "RemainQuantity phải lớn hơn 0"),
+      RemainQuantity: z.coerce
+        .number()
+        .min(10, "RemainQuantity phải lớn hơn 10"),
       Conditions: z.array(
         z.object({
           MinValue: z.coerce.number().min(0, "MinValue phải lớn hơn 0"),
@@ -45,11 +47,17 @@ const createVoucherbyAdmin = async (req, res) => {
       ),
       PercentDiscount: z.coerce
         .number()
-        .min(0, "PercentDiscount phải lớn hơn 0")
+        .min(1, "PercentDiscount phải lớn hơn 0")
         .max(100, "PercentDiscount không được vượt quá 100"),
       HaveVouchers: z.array(
         z.object({
           Service_ID: z.string(),
+        })
+      ),
+      Conditions: z.array(
+        z.object({
+          MinValue: z.coerce.number().min(1000, "MinValue phải lớn hơn 1000"),
+          MaxValue: z.coerce.number().min(0, "MaxValue phải lớn hơn 0"),
         })
       ),
     })
@@ -195,6 +203,12 @@ const createVoucherbyPartner = async (req, res) => {
       HaveVouchers: z.array(
         z.object({
           Service_ID: z.string(),
+        })
+      ),
+      Conditions: z.array(
+        z.object({
+          MinValue: z.coerce.number().min(1000, "MinValue phải lớn hơn 1000"),
+          MaxValue: z.coerce.number().min(0, "MaxValue phải lớn hơn 0"),
         })
       ),
     })
