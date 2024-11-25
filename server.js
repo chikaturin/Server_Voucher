@@ -51,6 +51,7 @@ const runPay = async () => {
         const parsedMessage = JSON.parse(rawMessage);
         const { orderId, status } = parsedMessage;
         console.log(`Parsed message:`, parsedMessage);
+        console.log(`Order ID: ${orderId}, status: ${status}`);
 
         if (status === "SUCCESS") {
           try {
@@ -61,7 +62,7 @@ const runPay = async () => {
           } catch (error) {
             console.error("Error sending SUCCESS to server:", error.message);
           }
-        } else if (status === "FAILED") {
+        } else if (status === "FAIL") {
           try {
             const res = await axios.get(
               `https://server-voucher.vercel.app/api/READKAFKA/${status}/${orderId}`
