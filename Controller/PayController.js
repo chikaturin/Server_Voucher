@@ -341,74 +341,90 @@ const ApplyVoucher = async (req, res) => {
     await ensureRedisConnection();
     const { _id } = req.params;
     const CusID = req.decoded?.email;
-
     const { TotalDiscount, Price, OrderID } = req.body;
 
-    const keycache = `usevoucher:${_id}-${numRedis}`;
-    let VoucherApply = await redisClient.get(keycache);
+    const keycache = `usevoucher:${_id}`;
+    const lockKey = `lock:${_id}`;
 
-    if (VoucherApply) {
-      VoucherApply = JSON.parse(VoucherApply);
-      const VoucherUsed = await Voucher.findById(_id);
-      VoucherUsed.RemainQuantity -= 1;
-      VoucherUsed.AmountUsed += 1;
-      if (VoucherApply.RemainQuantity <= 0) {
-        VoucherUsed.States = "Disable";
-      }
-      await VoucherUsed.save();
-    } else {
-      VoucherApply = await Voucher.findById(_id);
+    const lockAcquired = await redisClient.set(lockKey, "locked", {
+      NX: true,
+      PX: 100,
+    });
+
+    if (!lockAcquired) {
+      return res.status(429).json({
+        message: "Voucher is being processed, please try again later",
+      });
+    }
+
+    try {
+      let VoucherApply = await redisClient.get(keycache);
+
       if (!VoucherApply) {
+        VoucherApply = await Voucher.findById(_id);
+        if (!VoucherApply) {
+          await run(400, "FAILED");
+          await NoteDB.deleteMany({ OrderID });
+          return res.status(404).json({ message: "Voucher not found" });
+        }
+      } else {
+        VoucherApply = JSON.parse(VoucherApply);
+      }
+
+      if (
+        VoucherApply.RemainQuantity <= 0 ||
+        ["Disable", "Deleted"].includes(VoucherApply.States)
+      ) {
         await run(400, "FAILED");
         await NoteDB.deleteMany({ OrderID });
-        return res.status(401).json({ message: "Voucher not found" });
+        return res.status(400).json({ message: "Voucher cannot be used" });
       }
-      await redisClient.setEx(keycache, 10, JSON.stringify(VoucherApply));
-    }
 
-    if (
-      !VoucherApply ||
-      VoucherApply.RemainQuantity <= 0 ||
-      ["Disable", "Deleted"].includes(VoucherApply.States)
-    ) {
-      await run(400, "FAILED");
+      VoucherApply.RemainQuantity -= 1;
+      VoucherApply.AmountUsed += 1;
+      if (VoucherApply.RemainQuantity === 0) {
+        VoucherApply.States = "Disable";
+      }
+
+      await Voucher.findByIdAndUpdate(_id, {
+        RemainQuantity: VoucherApply.RemainQuantity,
+        AmountUsed: VoucherApply.AmountUsed,
+        States: VoucherApply.States,
+      });
+
+      await redisClient.setEx(keycache, 300, JSON.stringify(VoucherApply));
+
+      const Infor = {
+        VoucherID: _id,
+        VoucherName: VoucherApply.Name,
+        Discount: TotalDiscount,
+        OrderID: OrderID,
+        Price: Price - TotalDiscount,
+      };
+
+      console.log("Infor", Infor);
+
+      const historyKafka = {
+        OrderID: OrderID,
+        VoucherID: _id,
+        TotalDiscount: TotalDiscount,
+        CusID: CusID,
+      };
+
+      await redisClient.setEx(
+        `historyList:${historyKafka.OrderID}`,
+        300,
+        JSON.stringify(historyKafka)
+      );
+
+      numRedis = Math.floor(Math.random() * 1000);
+      await run(200, Infor);
       await NoteDB.deleteMany({ OrderID });
-      return res.status(400).json({ message: "Voucher cannot be used" });
+
+      return res.status(200).json({ message: "Apply voucher successfully" });
+    } finally {
+      await redisClient.del(lockKey);
     }
-
-    VoucherApply.RemainQuantity -= 1;
-    VoucherApply.AmountUsed += 1;
-
-    const Infor = {
-      VoucherID: _id,
-      VoucherName: VoucherApply.Name,
-      Discount: TotalDiscount,
-      OrderID: OrderID,
-      Price: Price - TotalDiscount,
-    };
-
-    console.log("Infor", Infor);
-
-    const historyKafka = {
-      OrderID: OrderID,
-      VoucherID: _id,
-      TotalDiscount: TotalDiscount,
-      CusID: CusID,
-    };
-
-    await redisClient.setEx(
-      `historyList:${historyKafka.OrderID}`,
-      300,
-      JSON.stringify(historyKafka)
-    );
-
-    numRedis = Math.floor(Math.random() * 100);
-
-    await run(200, Infor);
-    await redisClient.setEx(keycache, 10, JSON.stringify(VoucherApply));
-
-    await NoteDB.deleteMany({ OrderID });
-    return res.status(200).json({ message: "Apply voucher successfully" });
   } catch (error) {
     await run(400, "FAILED");
     res.status(400).json({ message: error.message });
