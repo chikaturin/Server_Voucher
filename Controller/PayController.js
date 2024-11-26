@@ -369,14 +369,16 @@ const ApplyVoucher = async (req, res) => {
       return res.status(400).json({ message: "Voucher cannot be used" });
     }
 
-    VoucherApply.RemainQuantity -= 1;
-    VoucherApply.AmountUsed += 1;
+    const VoucherUsed = await Voucher.findById(_id);
+
+    VoucherUsed.RemainQuantity -= 1;
+    VoucherUsed.AmountUsed += 1;
 
     if (VoucherApply.RemainQuantity <= 0) {
-      VoucherApply.States = "Disable";
+      VoucherUsed.States = "Disable";
     }
 
-    await VoucherApply.save();
+    await VoucherUsed.save();
 
     const Infor = {
       VoucherID: _id,
