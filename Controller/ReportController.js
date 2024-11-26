@@ -94,15 +94,19 @@ const detailReport = async (req, res) => {
 const SolveReport = async (req, res) => {
   try {
     const { _id } = req.params;
-    console.log(_id);
-    const report = await ReportVoucher.findByIdAndUpdate(
-      { _id },
-      { StateReport: "Solve" },
-      { new: true }
-    );
+    const report = await ReportVoucher.findById({ _id });
+
     if (!report) {
       return res.status(400).json({ message: "Report not found" });
     }
+
+    if (report.StateReport === "Solve") {
+      return res.status(400).json({ message: "Report has been solved" });
+    }
+
+    report.StateReport = "Solve";
+    await report.save();
+
     numredis = Math.floor(Math.random() * 100);
     res.status(200).json({ message: "Solve Report successfully" });
   } catch (error) {
