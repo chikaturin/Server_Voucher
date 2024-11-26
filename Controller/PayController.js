@@ -101,7 +101,10 @@ const READKAFKA = async (req, res) => {
         },
         { new: true }
       );
-      res.status(402).json({ message: "FAILED CREATE HISTORY" });
+
+      await redisClient.del(`historyList:${OrderID}`);
+
+      res.status(202).json({ message: "FAILED USED VOUCHER" });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
