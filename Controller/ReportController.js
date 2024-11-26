@@ -61,11 +61,11 @@ const deleteReportVoucher = async (req, res) => {
 
 const getReport = async (req, res) => {
   try {
+    const cacheKey = `getReport${numredis}`;
     await ensureRedisConnection();
-    const cacheKey = `ReportVoucher:${numredis}`;
-    const cacheReport = await redisClient.get(cacheKey);
-    if (cacheReport) {
-      return res.status(200).json(JSON.parse(cacheReport));
+    const cacheValue = await redisClient.get(cacheKey);
+    if (cacheValue) {
+      return res.json(JSON.parse(cacheValue));
     }
     const report = await ReportVoucher.find();
     if (!report) {
@@ -105,9 +105,9 @@ const SolveReport = async (req, res) => {
     }
 
     report.StateReport = "Solve";
+    numredis = Math.floor(Math.random() * 100);
     await report.save();
 
-    numredis = Math.floor(Math.random() * 100);
     res.status(200).json({ message: "Solve Report successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
