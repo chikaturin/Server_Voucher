@@ -340,10 +340,20 @@ const ApplyVoucher = async (req, res) => {
     const CusID = req.decoded?.email;
 
     const VoucherApply = await Voucher.findById(_id);
+
+    if (
+      VoucherApply.States === "Disable" ||
+      VoucherApply.States === "Deleted"
+    ) {
+      await run(400, "FAILED");
+      await NoteDB.deleteMany({ OrderID });
+      return res.status(400).json({ message: "VOUCHER CAN NOT USED" });
+    }
+
     if (!VoucherApply) {
       await run(400, "FAILED");
       await NoteDB.deleteMany({ OrderID });
-      return res.status(404).json({ message: "Voucher not found" });
+      return res.status(401).json({ message: "Voucher not found" });
     }
 
     const keycache = `usevoucher:${_id}`;
@@ -353,7 +363,7 @@ const ApplyVoucher = async (req, res) => {
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
         await NoteDB.deleteMany({ OrderID });
-        return res.status(400).json({ message: "VOUCHER USED" });
+        return res.status(402).json({ message: "VOUCHER CAN NOT USED" });
       }
     }
 
