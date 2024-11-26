@@ -140,7 +140,8 @@ const Statistical_VoucherAdmin = async (req, res) => {
 
 const Statistical_PartnerService = async (req, res) => {
   try {
-    const Partner_ID = req.decoded.id;
+    const Partner_ID = req.decoded.partnerId;
+
     const Statistical = await HistoryDB.aggregate([
       {
         $lookup: {
