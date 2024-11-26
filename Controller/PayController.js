@@ -339,6 +339,8 @@ const ApplyVoucher = async (req, res) => {
     const { _id } = req.params;
     const CusID = req.decoded?.email;
 
+    const { TotalDiscount, Price, OrderID } = req.body;
+
     const VoucherApply = await Voucher.findById(_id);
 
     if (
@@ -359,6 +361,8 @@ const ApplyVoucher = async (req, res) => {
     const keycache = `usevoucher:${_id}`;
 
     if (VoucherApply.RemainQuantity < 1) {
+      VoucherApply.States = "Disable";
+      await VoucherApply.save();
       const cachedApplyVoucher = await redisClient.get(keycache);
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
@@ -367,8 +371,6 @@ const ApplyVoucher = async (req, res) => {
       }
     }
 
-    const { TotalDiscount, Price, OrderID } = req.body;
-
     if (VoucherApply.RemainQuantity == 0) {
       await NoteDB.deleteMany({ OrderID });
       return res.status(400).json({ message: "VOUCHER HAS EXPIRED" });
@@ -376,7 +378,6 @@ const ApplyVoucher = async (req, res) => {
 
     VoucherApply.RemainQuantity -= 1;
     VoucherApply.AmountUsed += 1;
-    VoucherApply.States = "Disable";
     await VoucherApply.save();
 
     const Infor = {
