@@ -72,7 +72,7 @@ const READKAFKA = async (req, res) => {
     const { Status, OrderID } = req.params;
     const historydetail = await redisClient.get(`historyList:${OrderID}`);
     if (!historydetail) {
-      return res.status(404).json({ message: "History not found" });
+      return res.status(400).json({ message: "Order has been paid" });
     }
     const HistoryKafka = JSON.parse(historydetail);
 
