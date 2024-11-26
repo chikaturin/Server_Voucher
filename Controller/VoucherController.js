@@ -742,7 +742,7 @@ const VoucherWithServiceAdmin = async (req, res) => {
 
     const vouchers = await VoucherDB.find({ _id: { $in: voucherIds } });
 
-    return res.status(200).json({ vouchers });
+    return res.status(200).json(vouchers);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
