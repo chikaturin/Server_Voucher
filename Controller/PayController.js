@@ -349,6 +349,13 @@ const ApplyVoucher = async (req, res) => {
 
     if (VoucherApply) {
       VoucherApply = JSON.parse(VoucherApply);
+      const VoucherUsed = await Voucher.findById(_id);
+      VoucherUsed.RemainQuantity -= 1;
+      VoucherUsed.AmountUsed += 1;
+      if (VoucherApply.RemainQuantity <= 0) {
+        VoucherUsed.States = "Disable";
+      }
+      await VoucherUsed.save();
     } else {
       VoucherApply = await Voucher.findById(_id);
       if (!VoucherApply) {
@@ -369,16 +376,8 @@ const ApplyVoucher = async (req, res) => {
       return res.status(400).json({ message: "Voucher cannot be used" });
     }
 
-    const VoucherUsed = await Voucher.findById(_id);
-
-    VoucherUsed.RemainQuantity -= 1;
-    VoucherUsed.AmountUsed += 1;
-
-    if (VoucherApply.RemainQuantity <= 0) {
-      VoucherUsed.States = "Disable";
-    }
-
-    await VoucherUsed.save();
+    VoucherApply.RemainQuantity -= 1;
+    VoucherApply.AmountUsed += 1;
 
     const Infor = {
       VoucherID: _id,
@@ -387,6 +386,8 @@ const ApplyVoucher = async (req, res) => {
       OrderID: OrderID,
       Price: Price - TotalDiscount,
     };
+
+    console.log("Infor", Infor);
 
     const historyKafka = {
       OrderID: OrderID,
