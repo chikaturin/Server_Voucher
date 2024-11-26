@@ -731,41 +731,20 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-const VoucherWithDate = async (req, res) => {
+const VoucherWithServiceAdmin = async (req, res) => {
   try {
-    const now = removeTimeFromDate(new Date());
-    console.log("Running cron job to check voucher states...");
-
-    const vouchersToUpdate = await VoucherDB.find({
-      status: { $ne: "Deleted" },
-    });
-
-    console.log(`Found ${vouchersToUpdate.length} vouchers to update`);
-
-    for (const voucher of vouchersToUpdate) {
-      const releaseTime = removeTimeFromDate(voucher.ReleaseTime);
-      const expiredTime = removeTimeFromDate(voucher.ExpiredTime);
-
-      if (
-        releaseTime <= now &&
-        expiredTime >= now &&
-        voucher.RemainQuantity > 0
-      ) {
-        voucher.States = "Enable";
-        console.log(`Voucher ${voucher._id} set to Enable`);
-      } else if (expiredTime < now) {
-        voucher.States = "Disable";
-        console.log(`Voucher ${voucher._id} set to Disable`);
-      }
-
-      await voucher.save();
-      console.log(
-        `Voucher ${voucher._id} has been updated to ${voucher.States}`
-      );
+    const { Service_ID } = req.params;
+    const service = await HaveVoucherDB.find({ Service_ID });
+    if (!service || service.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
     }
-    return res.status(200).json("VoucherDB updated successfully");
+    const voucherIds = service.map((item) => item.Voucher_ID);
+
+    const vouchers = await VoucherDB.find({ _id: { $in: voucherIds } });
+
+    return res.status(200).json({ vouchers });
   } catch (error) {
-    console.error("Error updating vouchers:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -781,5 +760,5 @@ module.exports = {
   updateCondition,
   GetVoucherWithService,
   findcondition,
-  VoucherWithDate,
+  VoucherWithServiceAdmin,
 };
