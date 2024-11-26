@@ -14,7 +14,7 @@ const { checktokken, ReadToken } = require("../Middleware/check.js");
 router.post("/createReport", checktokken, CreateReport);
 router.delete("/deleteReportVoucher/:_id", deleteReportVoucher);
 router.get("/getReport", getReport);
-router.get("SolveReport/:_id", SolveReport);
 router.get("/detailReport/:_id", detailReport);
+router.get("/SolveReport/:_id", SolveReport);
 
 module.exports = router;
