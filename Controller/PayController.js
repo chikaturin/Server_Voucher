@@ -363,15 +363,18 @@ const ApplyVoucher = async (req, res) => {
 
     const keycache = `usevoucher:${_id}`;
 
-    if (VoucherApply.RemainQuantity < 1) {
-      VoucherApply.States = "Disable";
-      await VoucherApply.save();
+    if (VoucherApply.RemainQuantity <= 1) {
       const cachedApplyVoucher = await redisClient.get(keycache);
       if (cachedApplyVoucher) {
         await run(400, "FAILED");
         await NoteDB.deleteMany({ OrderID });
         return res.status(402).json({ message: "VOUCHER CAN NOT USED" });
       }
+    }
+
+    if (VoucherApply.RemainQuantity <= 1) {
+      VoucherApply.States = "Disable";
+      await VoucherApply.save();
     }
 
     if (VoucherApply.RemainQuantity == 0) {
