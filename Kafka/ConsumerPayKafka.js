@@ -20,37 +20,21 @@
 //   await consumer.run({
 //     eachMessage: async ({ topic, partition, message }) => {
 //       try {
-//         const rawMessage = message.value;
-//         const messageValue = rawMessage.toString().trim();
+//         const rawMessage = message.value.toString().trim();
+//         const parsedMessage = JSON.parse(rawMessage);
+//         const { orderId, status } = parsedMessage;
+//         console.log(`Parsed message:`, parsedMessage);
+//         console.log(`Order ID: ${orderId}, status: ${status}`);
 
-//         console.log(`Received raw message:`, rawMessage);
-//         console.log(`Parsed message: "${messageValue}"`);
-//         if (messageValue === "SUCCESS") {
-//           try {
-//             const res = await axios.get(
-//               "https://server-voucher.vercel.app/api/READKAFKA/SUCCESS"
-//             );
-//             console.log("Response from server:", res.data);
-//             console.log("Success voucher");
-//           } catch (error) {
-//             console.error("Error sending message to server:", error);
-//           }
-//         } else if (messageValue === "FAILED") {
-//           try {
-//             const res = await axios.get(
-//               "https://server-voucher.vercel.app/api/READKAFKA/FAIL"
-//             );
-//             console.log("Response from server:", res.data);
-//           } catch (error) {
-//             console.error("Error sending message to server:", error);
-//             console.log("Failed pay voucher");
-//           }
+//         if (status === "SUCCESS") {
+//           console.log("Success", parsedMessage);
+//         } else if (status === "FAIL") {
+//           console.log("Fail", parsedMessage);
 //         } else {
-//           console.log(`Unknown message: "${messageValue}"`);
+//           console.log(`Unknown status: ${status}`);
 //         }
-//         console.log("Success voucher");
 //       } catch (error) {
-//         console.error("Error parsing Kafka message:", error);
+//         console.error("Error parsing Kafka message:", error.message);
 //       }
 //     },
 //   });
