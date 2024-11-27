@@ -352,7 +352,7 @@ const ApplyVoucher = async (req, res) => {
     });
 
     if (!lockAcquired) {
-      return res.status(429).json({
+      return res.status(229).json({
         message: "Voucher is being processed, please try again later",
       });
     }
