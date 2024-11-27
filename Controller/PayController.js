@@ -348,7 +348,7 @@ const ApplyVoucher = async (req, res) => {
 
     const lockAcquired = await redisClient.set(lockKey, "locked", {
       NX: true,
-      PX: 1000,
+      PX: 3000,
     });
 
     if (!lockAcquired) {
