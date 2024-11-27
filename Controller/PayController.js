@@ -423,7 +423,11 @@ const ApplyVoucher = async (req, res) => {
       await run(200, Infor);
       await NoteDB.deleteMany({ OrderID });
 
-      return res.status(200).json({ message: "Apply voucher successfully" });
+      const checkvoucher = redisClient.get(`historyList:${OrderID}`);
+
+      return res
+        .status(200)
+        .json({ message: "Apply voucher successfully", checkvoucher });
     } finally {
       await redisClient.del(lockKey);
     }
