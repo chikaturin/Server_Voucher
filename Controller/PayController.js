@@ -412,7 +412,7 @@ const ApplyVoucher = async (req, res) => {
       };
 
       await redisClient.setEx(
-        `historyList:${historyKafka.OrderID}`,
+        `historyList:${OrderID}`,
         120,
         JSON.stringify(historyKafka)
       );
