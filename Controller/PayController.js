@@ -413,9 +413,11 @@ const ApplyVoucher = async (req, res) => {
 
       await redisClient.setEx(
         `historyList:${OrderID}`,
-        120,
+        300,
         JSON.stringify(historyKafka)
       );
+
+      console.log("historyKafka", historyKafka);
 
       numRedis = Math.floor(Math.random() * 1000);
       await run(200, Infor);
